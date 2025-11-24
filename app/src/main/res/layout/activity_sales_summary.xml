@@ -1,0 +1,255 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#1a1a1a">
+
+    <!-- 상단 헤더 -->
+    <LinearLayout
+        android:id="@+id/header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:background="#2a2a2a"
+        android:padding="16dp"
+        android:gravity="center_vertical">
+
+        <Button
+            android:id="@+id/backButton"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="←"
+            android:textSize="20sp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:textColor="#ffffff"/>
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="💰 매출 집계"
+            android:textColor="#ffffff"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:gravity="center"/>
+
+        <View
+            android:layout_width="40dp"
+            android:layout_height="40dp"/>
+
+    </LinearLayout>
+
+    <!-- 달력 영역 -->
+    <LinearLayout
+        android:id="@+id/calendarContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/header"
+        android:orientation="vertical"
+        android:padding="16dp"
+        android:background="#333333">
+
+        <!-- 월 선택 헤더 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_marginBottom="16dp">
+
+            <Button
+                android:id="@+id/prevMonthButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="◀"
+                android:textColor="#00ff88"
+                android:background="?attr/selectableItemBackgroundBorderless"/>
+
+            <TextView
+                android:id="@+id/monthYearText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2024년 11월"
+                android:textColor="#ffffff"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:layout_marginHorizontal="16dp"/>
+
+            <Button
+                android:id="@+id/nextMonthButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="▶"
+                android:textColor="#00ff88"
+                android:background="?attr/selectableItemBackgroundBorderless"/>
+
+        </LinearLayout>
+
+        <!-- 요일 헤더 -->
+        <GridLayout
+            android:id="@+id/weekDaysGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="7"
+            android:rowCount="1">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="일"
+                android:textColor="#ff6666"
+                android:textSize="14sp"
+                android:gravity="center"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="월"
+                android:textColor="#ffffff"
+                android:textSize="14sp"
+                android:gravity="center"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="화"
+                android:textColor="#ffffff"
+                android:textSize="14sp"
+                android:gravity="center"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="수"
+                android:textColor="#ffffff"
+                android:textSize="14sp"
+                android:gravity="center"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="목"
+                android:textColor="#ffffff"
+                android:textSize="14sp"
+                android:gravity="center"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="금"
+                android:textColor="#ffffff"
+                android:textSize="14sp"
+                android:gravity="center"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_columnWeight="1"
+                android:text="토"
+                android:textColor="#6666ff"
+                android:textSize="14sp"
+                android:gravity="center"/>
+
+        </GridLayout>
+
+        <!-- 날짜 그리드 -->
+        <GridLayout
+            android:id="@+id/calendarGrid"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="7"
+            android:layout_marginTop="8dp">
+            <!-- 날짜 버튼들이 동적으로 추가됨 -->
+        </GridLayout>
+
+        <!-- 월별 총 매출 -->
+        <TextView
+            android:id="@+id/monthlyTotalText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="월 매출 합계: 0원"
+            android:textColor="#00ff88"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginTop="16dp"
+            android:padding="8dp"
+            android:background="#1a1a1a"/>
+
+    </LinearLayout>
+
+    <!-- 입금 정보 영역 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/calendarContainer"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- 선택한 날짜 표시 -->
+        <TextView
+            android:id="@+id/selectedDateText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="날짜를 선택하세요"
+            android:textColor="#ffffff"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="8dp"/>
+
+        <!-- 당일 매출 합계 -->
+        <TextView
+            android:id="@+id/dailyTotalText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="당일 매출: 0원"
+            android:textColor="#00ff88"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:padding="12dp"
+            android:background="#2a2a2a"
+            android:layout_marginBottom="12dp"/>
+
+        <!-- 입금 목록 -->
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:background="#2a2a2a"
+            android:padding="8dp">
+
+            <LinearLayout
+                android:id="@+id/depositListContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/noDataText"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="입금 내역이 없습니다"
+                    android:textColor="#888888"
+                    android:textSize="16sp"
+                    android:gravity="center"
+                    android:padding="20dp"
+                    android:visibility="gone"/>
+
+                <!-- 입금 항목들이 동적으로 추가됨 -->
+
+            </LinearLayout>
+
+        </ScrollView>
+
+    </LinearLayout>
+
+</RelativeLayout>

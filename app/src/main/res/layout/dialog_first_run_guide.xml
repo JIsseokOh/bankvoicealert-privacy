@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:background="@drawable/rounded_dialog_bg">
+
+    <!-- 헤더 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="🎉 환영합니다!"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#00ff88"
+        android:gravity="center"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- 앱 소개 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="💰 입금 금액을 음성으로 알려드립니다"
+        android:textSize="18sp"
+        android:textColor="#ffffff"
+        android:gravity="center"
+        android:layout_marginBottom="20dp"/>
+
+    <!-- 구분선 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#444444"
+        android:layout_marginVertical="12dp"/>
+
+    <!-- 사용 가능 조건 타이틀 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="📱 은행별 사용 방법"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#00ff88"
+        android:layout_marginBottom="12dp"/>
+
+    <!-- 토스/카카오뱅크 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✅ "
+            android:textSize="16sp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="토스, 카카오뱅크"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#FEE500"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="→ 앱 알림만 켜면 바로 사용 가능!"
+                android:textSize="14sp"
+                android:textColor="#cccccc"
+                android:layout_marginTop="2dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 그 외 모든 은행 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✅ "
+            android:textSize="16sp"/>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="그 외 모든 은행"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#00BFFF"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="(농협, 신협, 국민, 신한, 우리 등)"
+                android:textSize="14sp"
+                android:textColor="#aaaaaa"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="→ 문자 서비스 신청 + 문자 알림 켜기"
+                android:textSize="14sp"
+                android:textColor="#cccccc"
+                android:layout_marginTop="2dp"/>
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- 구분선 -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#444444"
+        android:layout_marginVertical="12dp"/>
+
+    <!-- 중요 안내 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#333333"
+        android:padding="12dp"
+        android:orientation="vertical"
+        android:layout_marginBottom="16dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="⚠️ 중요 안내"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:textColor="#ffaa00"
+            android:layout_marginBottom="8dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• 알림이 뜨면 모두 사용 가능합니다"
+            android:textSize="14sp"
+            android:textColor="#ffffff"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• 은행 앱 또는 문자 알림이 켜져있어야 합니다"
+            android:textSize="14sp"
+            android:textColor="#ffffff"
+            android:layout_marginBottom="4dp"/>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="• 권한 설정을 반드시 허용해주세요"
+            android:textSize="14sp"
+            android:textColor="#ffffff"/>
+    </LinearLayout>
+
+    <!-- 체크박스 -->
+    <CheckBox
+        android:id="@+id/checkDontShowAgain"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="다시 보지 않기"
+        android:textColor="#888888"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- 버튼 -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/btnSetupNow"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="지금 설정하기"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="#00ff88"
+            android:textColor="#000000"
+            android:layout_marginEnd="8dp"/>
+
+        <Button
+            android:id="@+id/btnLater"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="나중에"
+            android:textSize="16sp"
+            android:backgroundTint="#555555"
+            android:textColor="#ffffff"
+            android:layout_marginStart="8dp"/>
+    </LinearLayout>
+
+    </LinearLayout>
+</ScrollView>
