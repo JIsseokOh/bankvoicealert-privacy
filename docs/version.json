@@ -1,7 +1,7 @@
 {
-  "latestVersionCode": 56,
+  "latestVersionCode": 55,
   "latestVersionName": "1.3.25",
-  "minimumVersionCode": 56,
+  "minimumVersionCode": 55,
   "updateMessage": "새로운 업데이트가 있습니다.\n\n주요 업데이트:\n- 💰 매출 집계 기능 추가\n- 날짜별 입금 내역 자동 기록\n- 일별/월별 매출 합계 확인 가능\n- UI 개선 (띵동 입금알리미 카드 제거)\n- 안정성 개선\n\n앱을 계속 사용하려면 반드시 업데이트가 필요합니다.",
   "playStoreUrl": "https://play.google.com/store/apps/details?id=com.family.bankvoicealert"
 }
