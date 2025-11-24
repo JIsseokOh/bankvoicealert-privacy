@@ -43,6 +43,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
     private lateinit var serviceSwitch: Switch
     private lateinit var testButton: Button
+    private lateinit var salesSummaryButton: Button
     private lateinit var helpButton: Button
     private lateinit var supportButton: Button
     private lateinit var privacyButton: Button
@@ -111,6 +112,7 @@ class MainActivity : AppCompatActivity() {
         statusText = findViewById(R.id.statusText)
         serviceSwitch = findViewById(R.id.serviceSwitch)
         testButton = findViewById(R.id.testButton)
+        salesSummaryButton = findViewById(R.id.salesSummaryButton)
         helpButton = findViewById(R.id.helpButton)
         supportButton = findViewById(R.id.supportButton)
         privacyButton = findViewById(R.id.privacyButton)
@@ -183,6 +185,12 @@ class MainActivity : AppCompatActivity() {
         
         testButton.setOnClickListener {
             testVoiceAlert()
+        }
+
+        salesSummaryButton.setOnClickListener {
+            // 매출 집계 화면 열기
+            val intent = Intent(this, SalesSummaryActivity::class.java)
+            startActivity(intent)
         }
 
         helpButton.setOnClickListener {
@@ -636,6 +644,9 @@ class MainActivity : AppCompatActivity() {
             }
             dialog.dismiss()
 
+            // 매출 집계 가이드 표시
+            showSalesSummaryGuide()
+
             // 권한 설정 화면으로 이동 (권한 설정 버튼과 동일한 동작)
             openNotificationSettings()
         }
@@ -648,6 +659,36 @@ class MainActivity : AppCompatActivity() {
                 // 체크 해제 시 다음에도 표시되도록 설정
                 prefs.edit().putBoolean("dont_show_guide", false).apply()
             }
+            dialog.dismiss()
+
+            // 매출 집계 가이드 표시
+            showSalesSummaryGuide()
+        }
+
+        dialog.show()
+
+        // 다이얼로그의 최대 높이를 화면 높이의 80%로 제한
+        dialog.window?.let { window ->
+            val displayMetrics = resources.displayMetrics
+            val maxHeight = (displayMetrics.heightPixels * 0.8).toInt()
+
+            window.attributes?.let { params ->
+                params.height = maxHeight
+                window.attributes = params
+            }
+        }
+    }
+
+    private fun showSalesSummaryGuide() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_sales_summary_guide, null)
+        val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirm)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+
+        btnConfirm.setOnClickListener {
             dialog.dismiss()
         }
 
