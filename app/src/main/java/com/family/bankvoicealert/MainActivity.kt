@@ -24,8 +24,11 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationManagerCompat
 import android.os.CountDownTimer
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.FrameLayout
+import android.widget.GridLayout
 import androidx.activity.OnBackPressedCallback
 
 class MainActivity : AppCompatActivity() {
@@ -45,12 +48,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var testButton: Button
     private lateinit var helpButton: Button
     private lateinit var supportButton: Button
-    private lateinit var privacyButton: Button
     private lateinit var permissionButton: Button
     private lateinit var backgroundSwitch: Switch
     private lateinit var backgroundText: TextView
     private lateinit var batteryOptimizationButton: Button
-    // Removed debugLogText
+    private lateinit var salesSummaryButton: Button
+    private lateinit var depositDataManager: DepositDataManager
 
     override fun attachBaseContext(newBase: Context) {
         // 시스템 폰트 스케일을 1.0으로 고정하여 텍스트 크기 변경 방지
@@ -72,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         ttsManager = TTSManager.getInstance(this)
         adManager = AdManager(this)
         updateChecker = UpdateChecker(this)
+        depositDataManager = DepositDataManager.getInstance(this)
 
         initViews()
         loadSettings()
@@ -113,13 +117,11 @@ class MainActivity : AppCompatActivity() {
         testButton = findViewById(R.id.testButton)
         helpButton = findViewById(R.id.helpButton)
         supportButton = findViewById(R.id.supportButton)
-        privacyButton = findViewById(R.id.privacyButton)
         permissionButton = findViewById(R.id.permissionButton)
         backgroundSwitch = findViewById(R.id.backgroundSwitch)
         backgroundText = findViewById(R.id.backgroundText)
         batteryOptimizationButton = findViewById(R.id.batteryOptimizationButton)
-        // Remove debug log text view
-        // debugLogText = findViewById(R.id.debugLogText)
+        salesSummaryButton = findViewById(R.id.salesSummaryButton)
     }
     
     private fun loadSettings() {
@@ -185,6 +187,10 @@ class MainActivity : AppCompatActivity() {
             testVoiceAlert()
         }
 
+        salesSummaryButton.setOnClickListener {
+            showSalesSummaryDialog()
+        }
+
         helpButton.setOnClickListener {
             // 사용방법 다시 보기 - 처음 실행 안내창을 다시 표시
             showFirstRunGuide()
@@ -197,16 +203,6 @@ class MainActivity : AppCompatActivity() {
                 startActivity(intent)
             } catch (e: Exception) {
                 Toast.makeText(this, "카카오톡 오픈채팅을 열 수 없습니다", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        privacyButton.setOnClickListener {
-            // 개인정보처리방침 페이지로 연결
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://jisseokoh.github.io/bankvoicealert-privacy/"))
-            try {
-                startActivity(intent)
-            } catch (e: Exception) {
-                Toast.makeText(this, "웹 브라우저를 열 수 없습니다", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -397,7 +393,7 @@ class MainActivity : AppCompatActivity() {
         val isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations()
 
         // 텍스트를 항상 동일하게 표시
-        backgroundText.text = "아래 버튼 누르고 앱 나가면 끝!"
+        backgroundText.text = "아래 스위치 키고 앱 나가면 끝!"
         backgroundText.setTextColor(getColor(android.R.color.holo_green_light))
 
         // 스위치 상태만 변경
@@ -636,6 +632,9 @@ class MainActivity : AppCompatActivity() {
             }
             dialog.dismiss()
 
+            // 매출 집계 설명창 표시
+            showSalesSummaryGuide()
+
             // 권한 설정 화면으로 이동 (권한 설정 버튼과 동일한 동작)
             openNotificationSettings()
         }
@@ -649,12 +648,16 @@ class MainActivity : AppCompatActivity() {
                 prefs.edit().putBoolean("dont_show_guide", false).apply()
             }
             dialog.dismiss()
+
+            // 매출 집계 설명창 표시
+            showSalesSummaryGuide()
         }
 
         dialog.show()
 
-        // 다이얼로그의 최대 높이를 화면 높이의 80%로 제한
+        // 다이얼로그 배경 투명 설정 및 최대 높이 제한
         dialog.window?.let { window ->
+            window.setBackgroundDrawableResource(android.R.color.transparent)
             val displayMetrics = resources.displayMetrics
             val maxHeight = (displayMetrics.heightPixels * 0.8).toInt()
 
@@ -676,5 +679,276 @@ class MainActivity : AppCompatActivity() {
                 Log.e("MainActivity", "Failed to check for updates", exception)
             }
         )
+    }
+
+    private fun showSalesSummaryGuide() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_sales_summary_guide, null)
+        val btnConfirm = dialogView.findViewById<Button>(R.id.btnConfirm)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        btnConfirm.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+
+        // 다이얼로그 배경 투명 설정 및 화면 가운데 표시
+        dialog.window?.let { window ->
+            window.setBackgroundDrawableResource(android.R.color.transparent)
+            window.setGravity(Gravity.CENTER)
+        }
+    }
+
+    private fun showSalesSummaryDialog() {
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_sales_summary, null)
+
+        val btnPrevMonth = dialogView.findViewById<Button>(R.id.btnPrevMonth)
+        val btnNextMonth = dialogView.findViewById<Button>(R.id.btnNextMonth)
+        val tvCurrentMonth = dialogView.findViewById<TextView>(R.id.tvCurrentMonth)
+        val calendarGrid = dialogView.findViewById<GridLayout>(R.id.calendarGrid)
+        val tvSelectedDate = dialogView.findViewById<TextView>(R.id.tvSelectedDate)
+        val depositListContainer = dialogView.findViewById<LinearLayout>(R.id.depositListContainer)
+        val tvDailyTotal = dialogView.findViewById<TextView>(R.id.tvDailyTotal)
+        val tvMonthlyTotal = dialogView.findViewById<TextView>(R.id.tvMonthlyTotal)
+        val btnClose = dialogView.findViewById<Button>(R.id.btnClose)
+        val btnBack = dialogView.findViewById<Button>(R.id.btnBack)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        // 현재 날짜
+        val calendar = java.util.Calendar.getInstance()
+        var currentYear = calendar.get(java.util.Calendar.YEAR)
+        var currentMonth = calendar.get(java.util.Calendar.MONTH) + 1
+        var selectedDay = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+        val todayYear = currentYear
+        val todayMonth = currentMonth
+        val todayDay = selectedDay
+
+        // 람다 변수 선언 (상호 참조를 위해)
+        lateinit var updateCalendar: () -> Unit
+        lateinit var updateDepositList: () -> Unit
+
+        // 입금 내역 업데이트 함수
+        updateDepositList = {
+            val dateStr = String.format("%04d-%02d-%02d", currentYear, currentMonth, selectedDay)
+            val deposits = depositDataManager.getDepositsForDate(dateStr)
+            val dailyTotal = depositDataManager.getDailySummary(dateStr)
+
+            tvSelectedDate.text = "${currentYear}년 ${currentMonth}월 ${selectedDay}일"
+            tvDailyTotal.text = depositDataManager.formatAmount(dailyTotal)
+
+            depositListContainer.removeAllViews()
+
+            if (deposits.isEmpty()) {
+                val emptyText = TextView(this)
+                emptyText.text = "입금 내역이 없습니다"
+                emptyText.setTextColor(resources.getColor(android.R.color.darker_gray, theme))
+                emptyText.gravity = android.view.Gravity.CENTER
+                emptyText.setPadding(0, 32, 0, 32)
+                depositListContainer.addView(emptyText)
+            } else {
+                for (deposit in deposits) {
+                    val itemView = LinearLayout(this)
+                    itemView.orientation = LinearLayout.HORIZONTAL
+                    itemView.setPadding(8, 12, 8, 12)
+                    itemView.gravity = android.view.Gravity.CENTER_VERTICAL
+
+                    val timeText = TextView(this)
+                    timeText.text = deposit.time
+                    timeText.setTextColor(resources.getColor(android.R.color.darker_gray, theme))
+                    timeText.textSize = 12f
+                    timeText.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 0.25f)
+
+                    val senderText = TextView(this)
+                    senderText.text = deposit.sender
+                    senderText.setTextColor(resources.getColor(android.R.color.white, theme))
+                    senderText.textSize = 14f
+                    senderText.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 0.35f)
+
+                    val amountText = TextView(this)
+                    amountText.text = depositDataManager.formatAmount(deposit.amount)
+                    amountText.setTextColor(resources.getColor(android.R.color.holo_green_light, theme))
+                    amountText.textSize = 14f
+                    amountText.setTypeface(null, android.graphics.Typeface.BOLD)
+                    amountText.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 0.3f)
+
+                    val deleteBtn = Button(this)
+                    deleteBtn.text = "X"
+                    deleteBtn.textSize = 12f
+                    deleteBtn.setTextColor(resources.getColor(android.R.color.white, theme))
+                    deleteBtn.setBackgroundColor(resources.getColor(android.R.color.holo_red_dark, theme))
+                    deleteBtn.layoutParams = LinearLayout.LayoutParams(80, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    deleteBtn.setPadding(8, 4, 8, 4)
+
+                    val depositId = deposit.id
+                    deleteBtn.setOnClickListener {
+                        AlertDialog.Builder(this)
+                            .setTitle("삭제 확인")
+                            .setMessage("이 입금 기록을 삭제하시겠습니까?\n${deposit.time} - ${depositDataManager.formatAmount(deposit.amount)}")
+                            .setPositiveButton("삭제") { _, _ ->
+                                depositDataManager.deleteDeposit(depositId)
+                                updateDepositList()
+                                updateCalendar()
+                            }
+                            .setNegativeButton("취소", null)
+                            .show()
+                    }
+
+                    itemView.addView(timeText)
+                    itemView.addView(senderText)
+                    itemView.addView(amountText)
+                    itemView.addView(deleteBtn)
+
+                    depositListContainer.addView(itemView)
+
+                    // 구분선
+                    val divider = View(this)
+                    divider.setBackgroundColor(resources.getColor(android.R.color.darker_gray, theme))
+                    divider.layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
+                    depositListContainer.addView(divider)
+                }
+            }
+        }
+
+        // 달력 업데이트 함수
+        updateCalendar = {
+            tvCurrentMonth.text = "${currentYear}년 ${currentMonth}월"
+            calendarGrid.removeAllViews()
+
+            // 해당 월의 첫 날과 마지막 날 계산
+            val cal = java.util.Calendar.getInstance()
+            cal.set(currentYear, currentMonth - 1, 1)
+            val firstDayOfWeek = cal.get(java.util.Calendar.DAY_OF_WEEK) - 1
+            val maxDay = cal.getActualMaximum(java.util.Calendar.DAY_OF_MONTH)
+
+            // 월별 매출 데이터 가져오기
+            val monthlySummary = depositDataManager.getMonthlySummary(currentYear, currentMonth)
+
+            // 월 매출 합계 계산 및 표시
+            val monthlyTotal = monthlySummary.values.sum()
+            tvMonthlyTotal.text = depositDataManager.formatAmount(monthlyTotal)
+
+            // 빈 칸 추가
+            for (i in 0 until firstDayOfWeek) {
+                val emptyView = TextView(this)
+                emptyView.layoutParams = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                }
+                calendarGrid.addView(emptyView)
+            }
+
+            // 날짜 추가
+            for (day in 1..maxDay) {
+                val dayView = TextView(this)
+                dayView.textSize = 14f
+                dayView.gravity = android.view.Gravity.CENTER
+                dayView.setPadding(4, 12, 4, 12)
+
+                val dayOfWeek = (firstDayOfWeek + day - 1) % 7
+                dayView.setTextColor(when (dayOfWeek) {
+                    0 -> resources.getColor(android.R.color.holo_red_light, theme) // 일요일
+                    6 -> resources.getColor(android.R.color.holo_blue_light, theme) // 토요일
+                    else -> resources.getColor(android.R.color.white, theme)
+                })
+
+                // 매출이 있는 날 표시
+                if (monthlySummary.containsKey(day)) {
+                    dayView.text = "$day\n●"
+                    dayView.setTextColor(resources.getColor(android.R.color.holo_orange_light, theme))
+                } else {
+                    dayView.text = day.toString()
+                }
+
+                // 선택된 날짜 배경색 (연한 음영)
+                if (day == selectedDay) {
+                    dayView.setBackgroundColor(resources.getColor(android.R.color.holo_green_dark, theme))
+                    dayView.alpha = 0.7f
+                } else {
+                    dayView.setBackgroundColor(0)
+                    dayView.alpha = 1.0f
+                }
+
+                // 오늘 날짜 표시
+                if (currentYear == todayYear && currentMonth == todayMonth && day == todayDay) {
+                    dayView.setTextColor(resources.getColor(android.R.color.holo_green_light, theme))
+                    dayView.setTypeface(null, android.graphics.Typeface.BOLD)
+                }
+
+                dayView.layoutParams = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                }
+
+                val currentDay = day
+                dayView.setOnClickListener {
+                    selectedDay = currentDay
+                    updateCalendar()
+                    updateDepositList()
+                }
+
+                calendarGrid.addView(dayView)
+            }
+        }
+
+        // 이전 달 버튼
+        btnPrevMonth.setOnClickListener {
+            currentMonth--
+            if (currentMonth < 1) {
+                currentMonth = 12
+                currentYear--
+            }
+            selectedDay = 1
+            updateCalendar()
+            updateDepositList()
+        }
+
+        // 다음 달 버튼
+        btnNextMonth.setOnClickListener {
+            currentMonth++
+            if (currentMonth > 12) {
+                currentMonth = 1
+                currentYear++
+            }
+            selectedDay = 1
+            updateCalendar()
+            updateDepositList()
+        }
+
+        // 뒤로가기 버튼
+        btnBack.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // 닫기 버튼
+        btnClose.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        // 초기화
+        updateCalendar()
+        updateDepositList()
+
+        dialog.show()
+
+        // 다이얼로그의 최대 높이를 화면 높이의 80%로 제한
+        dialog.window?.let { window ->
+            val displayMetrics = resources.displayMetrics
+            val maxHeight = (displayMetrics.heightPixels * 0.8).toInt()
+
+            window.attributes?.let { params ->
+                params.height = maxHeight
+                window.attributes = params
+            }
+        }
     }
 }

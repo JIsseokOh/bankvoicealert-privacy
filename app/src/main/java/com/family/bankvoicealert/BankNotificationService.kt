@@ -15,11 +15,13 @@ class BankNotificationService : NotificationListenerService() {
     }
 
     private lateinit var ttsManager: TTSManager
+    private lateinit var depositDataManager: DepositDataManager
     private var isServiceActive = false
 
     override fun onCreate() {
         super.onCreate()
         ttsManager = TTSManager.getInstance(this)
+        depositDataManager = DepositDataManager.getInstance(this)
         isServiceActive = true
         Log.d(TAG, "Service created")
     }
@@ -57,6 +59,16 @@ class BankNotificationService : NotificationListenerService() {
 
                 // 중복 확인
                 if (!DuplicateChecker.getInstance().isDuplicate(amount, "")) {
+                    // 매출 집계용 데이터 저장 (음성 로직과 독립적)
+                    try {
+                        val sender = extractSender(text)
+                        depositDataManager.addDeposit(amount, sender)
+                        Log.d(TAG, "입금 기록 저장: ${amount}원, 입금자: $sender")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "입금 기록 저장 실패", e)
+                    }
+
+                    // 기존 음성 로직 (절대 수정하지 않음)
                     ttsManager.speakSimple("입금확인", amount)
                 } else {
                     Log.d(TAG, "중복 알림 무시: ${amount}원")
@@ -94,6 +106,31 @@ class BankNotificationService : NotificationListenerService() {
         val regex = Regex("([0-9,]+)\\s?원(?![가-힣])")
         val match = regex.find(text)
         return match?.groupValues?.get(1)?.replace(",", "") ?: ""
+    }
+
+    private fun extractSender(text: String): String {
+        // 입금자 이름 추출 시도
+        // 패턴 1: "홍길동님으로부터", "홍길동 입금"
+        val patterns = listOf(
+            Regex("([가-힣]{2,4})님?으?로?부터"),
+            Regex("([가-힣]{2,4})\\s*입금"),
+            Regex("입금\\s*([가-힣]{2,4})"),
+            Regex("([가-힣]{2,4})님")
+        )
+
+        for (pattern in patterns) {
+            val match = pattern.find(text)
+            if (match != null) {
+                val sender = match.groupValues[1]
+                // 은행 이름이나 일반적인 단어 제외
+                val excludeWords = listOf("입금", "출금", "이체", "송금", "결제", "알림", "은행", "계좌")
+                if (!excludeWords.contains(sender)) {
+                    return sender
+                }
+            }
+        }
+
+        return "알수없음"
     }
 
     private fun isBlockedApp(packageName: String): Boolean {
