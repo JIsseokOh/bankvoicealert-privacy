@@ -23,6 +23,10 @@ class UpdateChecker(private val context: Context) {
         // GitHub Pages에 호스팅될 버전 정보 JSON 파일 URL
         private const val VERSION_CHECK_URL = "https://jisseokoh.github.io/bankvoicealert-privacy/version.json"
         private const val GOOGLE_PLAY_STORE_URL = "https://play.google.com/store/apps/details?id=com.family.bankvoicealert"
+
+        // 업데이트 필요 여부 확인용 키
+        const val PREF_NEEDS_UPDATE = "needs_update"
+        const val PREF_UPDATE_TTS_MESSAGE = "update_tts_message"
     }
 
     data class VersionInfo(
@@ -39,23 +43,41 @@ class UpdateChecker(private val context: Context) {
             try {
                 val versionInfo = fetchVersionInfo()
                 val currentVersionCode = getCurrentVersionCode()
+                val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
 
                 Log.d(TAG, "Current version: $currentVersionCode, Latest: ${versionInfo.latestVersionCode}, Minimum: ${versionInfo.minimumVersionCode}")
 
                 // 현재 버전이 최소 요구 버전보다 낮으면 강제 업데이트
                 if (currentVersionCode < versionInfo.minimumVersionCode) {
+                    // 업데이트 필요 상태 저장 (TTS 알림용)
+                    prefs.edit()
+                        .putBoolean(PREF_NEEDS_UPDATE, true)
+                        .putString(PREF_UPDATE_TTS_MESSAGE, "띵동을 업데이트해주세요!")
+                        .apply()
+
                     val forceUpdateInfo = versionInfo.copy(forceUpdate = true)
                     Handler(Looper.getMainLooper()).post {
                         onUpdateNeeded(forceUpdateInfo)
                     }
                 } else if (currentVersionCode < versionInfo.latestVersionCode) {
+                    // 업데이트 필요 상태 저장 (TTS 알림용)
+                    prefs.edit()
+                        .putBoolean(PREF_NEEDS_UPDATE, true)
+                        .putString(PREF_UPDATE_TTS_MESSAGE, "띵동을 업데이트해주세요!")
+                        .apply()
+
                     // 선택적 업데이트
                     val optionalUpdateInfo = versionInfo.copy(forceUpdate = false)
                     Handler(Looper.getMainLooper()).post {
                         onUpdateNeeded(optionalUpdateInfo)
                     }
+                } else {
+                    // 최신 버전이면 업데이트 불필요 상태로 변경
+                    prefs.edit()
+                        .putBoolean(PREF_NEEDS_UPDATE, false)
+                        .remove(PREF_UPDATE_TTS_MESSAGE)
+                        .apply()
                 }
-                // 최신 버전이면 아무 동작 안 함
 
             } catch (e: Exception) {
                 Log.e(TAG, "Error checking for update", e)
