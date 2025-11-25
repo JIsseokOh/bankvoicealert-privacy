@@ -73,7 +73,6 @@
             overflow-x: hidden;
         }
 
-        /* 메인 컨테이너 */
         .main-container {
             min-height: 100vh;
             display: flex;
@@ -86,7 +85,7 @@
             background-size: 200% 200%;
             animation: gradientShift 8s ease infinite;
             color: white;
-            padding: 60px 40px;
+            padding: 50px 40px;
             position: relative;
             overflow: hidden;
         }
@@ -96,7 +95,6 @@
             50% { background-position: 100% 50%; }
         }
 
-        /* 배경 장식 */
         .hero::before {
             content: '';
             position: absolute;
@@ -127,11 +125,11 @@
         }
 
         .hero-content {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 40px;
             align-items: center;
             position: relative;
             z-index: 1;
@@ -152,16 +150,16 @@
             backdrop-filter: blur(10px);
             padding: 8px 20px;
             border-radius: 50px;
-            font-size: 0.95rem;
-            margin-bottom: 20px;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
             border: 1px solid rgba(255,255,255,0.3);
         }
 
         .hero h1 {
-            font-size: 3.2rem;
+            font-size: 2.8rem;
             font-weight: 900;
             line-height: 1.2;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             text-shadow: 0 4px 20px rgba(0,0,0,0.2);
         }
 
@@ -173,10 +171,10 @@
         }
 
         .hero-description {
-            font-size: 1.4rem;
+            font-size: 1.25rem;
             line-height: 1.7;
             opacity: 0.95;
-            margin-bottom: 35px;
+            margin-bottom: 25px;
         }
 
         .hero-description strong {
@@ -184,19 +182,13 @@
             font-weight: 700;
         }
 
-        .cta-buttons {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
         .btn {
             display: inline-flex;
             align-items: center;
             gap: 12px;
-            padding: 18px 35px;
+            padding: 16px 32px;
             border-radius: 16px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 700;
             text-decoration: none;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -215,140 +207,312 @@
             box-shadow: 0 15px 40px rgba(16, 185, 129, 0.5);
         }
 
-        .btn-primary i {
-            font-size: 1.4rem;
-        }
-
-        /* 폰 목업 */
+        /* 폰 목업 공통 */
         .phone-mockup {
             display: flex;
             justify-content: center;
-            animation: slideInRight 0.8s ease-out;
+            animation: slideInUp 0.8s ease-out;
         }
 
-        @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(50px); }
-            to { opacity: 1; transform: translateX(0); }
+        .phone-mockup:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes slideInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .phone-frame {
             background: linear-gradient(145deg, #1a1a2e, #16213e);
-            border-radius: 40px;
-            padding: 15px;
-            box-shadow:
-                0 50px 100px rgba(0,0,0,0.3),
-                inset 0 2px 10px rgba(255,255,255,0.1);
-            transform: perspective(1000px) rotateY(-5deg) rotateX(5deg);
-            transition: transform 0.5s ease;
-        }
-
-        .phone-frame:hover {
-            transform: perspective(1000px) rotateY(0deg) rotateX(0deg);
+            border-radius: 35px;
+            padding: 12px;
+            box-shadow: 0 40px 80px rgba(0,0,0,0.3), inset 0 2px 10px rgba(255,255,255,0.1);
         }
 
         .phone-screen {
             background: linear-gradient(180deg, #1e293b, #334155);
-            border-radius: 28px;
-            width: 280px;
-            height: 500px;
+            border-radius: 25px;
+            width: 240px;
+            height: 440px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 30px;
+            padding: 20px 15px;
             position: relative;
             overflow: hidden;
         }
 
         .phone-notch {
             position: absolute;
-            top: 10px;
-            width: 100px;
-            height: 25px;
+            top: 8px;
+            width: 80px;
+            height: 20px;
             background: #0f172a;
-            border-radius: 20px;
+            border-radius: 15px;
         }
 
+        .phone-label {
+            text-align: center;
+            margin-top: 15px;
+            color: white;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        /* 입금 알림 카드 */
         .notification-card {
             background: white;
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: 14px;
+            padding: 15px;
             width: 100%;
-            margin-bottom: 15px;
+            margin-top: 35px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-            animation: notificationPop 0.5s ease-out;
-        }
-
-        @keyframes notificationPop {
-            0% { transform: scale(0.8); opacity: 0; }
-            100% { transform: scale(1); opacity: 1; }
         }
 
         .notification-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
+            gap: 8px;
+            margin-bottom: 10px;
         }
 
         .notification-icon {
-            width: 36px;
-            height: 36px;
+            width: 30px;
+            height: 30px;
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            border-radius: 10px;
+            border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
+            font-size: 0.8rem;
         }
 
         .notification-app {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: var(--gray);
         }
 
         .notification-time {
-            font-size: 0.8rem;
+            font-size: 0.7rem;
             color: var(--gray);
             margin-left: auto;
         }
 
         .notification-body {
-            color: var(--dark);
             text-align: center;
         }
 
         .notification-title {
             font-weight: 700;
-            font-size: 1.1rem;
-            margin-bottom: 8px;
+            font-size: 0.95rem;
+            margin-bottom: 5px;
             color: var(--primary);
         }
 
         .notification-amount {
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             font-weight: 900;
             color: var(--secondary);
-            margin: 10px 0;
+            margin: 8px 0;
         }
 
         .notification-voice {
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             color: var(--gray);
             background: #f1f5f9;
-            padding: 8px 12px;
-            border-radius: 8px;
-            margin-top: 10px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            margin-top: 8px;
         }
 
         .notification-voice i {
             color: var(--accent);
-            margin-right: 5px;
+            margin-right: 4px;
+        }
+
+        /* 매출 집계 화면 */
+        .sales-screen {
+            background: #1e293b;
+            border-radius: 25px;
+            width: 240px;
+            height: 440px;
+            padding: 15px 12px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sales-header {
+            text-align: center;
+            color: white;
+            margin-top: 25px;
+            margin-bottom: 12px;
+        }
+
+        .sales-header h3 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .sales-month {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #334155;
+            border-radius: 10px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+        }
+
+        .sales-month span {
+            color: white;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .sales-month button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* 미니 캘린더 */
+        .mini-calendar {
+            background: #334155;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .calendar-weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 5px;
+        }
+
+        .calendar-weekdays span {
+            text-align: center;
+            font-size: 0.6rem;
+            color: #94a3b8;
+            padding: 3px 0;
+        }
+
+        .calendar-weekdays span:first-child { color: #f87171; }
+        .calendar-weekdays span:last-child { color: #60a5fa; }
+
+        .calendar-days {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+
+        .calendar-day {
+            text-align: center;
+            font-size: 0.65rem;
+            color: white;
+            padding: 4px 2px;
+            border-radius: 4px;
+        }
+
+        .calendar-day.empty { color: transparent; }
+        .calendar-day.has-sales {
+            color: #fbbf24;
+            font-weight: 700;
+        }
+        .calendar-day.has-sales::after {
+            content: '●';
+            display: block;
+            font-size: 0.4rem;
+            color: #10b981;
+        }
+        .calendar-day.selected {
+            background: #10b981;
+            color: white;
+        }
+
+        /* 일별 매출 */
+        .daily-sales {
+            background: #334155;
+            border-radius: 10px;
+            padding: 10px;
+        }
+
+        .daily-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #475569;
+        }
+
+        .daily-header span {
+            color: white;
+            font-size: 0.75rem;
+        }
+
+        .daily-total {
+            color: #10b981;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        .sales-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid #475569;
+        }
+
+        .sales-item:last-child {
+            border-bottom: none;
+        }
+
+        .sales-item-time {
+            color: #94a3b8;
+            font-size: 0.65rem;
+        }
+
+        .sales-item-sender {
+            color: white;
+            font-size: 0.7rem;
+        }
+
+        .sales-item-amount {
+            color: #10b981;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .monthly-total {
+            text-align: center;
+            margin-top: 10px;
+            padding: 8px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 8px;
+        }
+
+        .monthly-total span {
+            color: white;
+            font-size: 0.7rem;
+        }
+
+        .monthly-total strong {
+            display: block;
+            color: white;
+            font-size: 1rem;
+            font-weight: 900;
+            margin-top: 2px;
         }
 
         /* 기능 섹션 */
         .features {
-            padding: 50px 40px;
+            padding: 45px 40px;
             background: white;
         }
 
@@ -363,7 +527,7 @@
         .feature-card {
             background: var(--light);
             border-radius: 20px;
-            padding: 30px 25px;
+            padding: 28px 22px;
             text-align: center;
             transition: all 0.3s ease;
             border: 2px solid transparent;
@@ -376,14 +540,14 @@
         }
 
         .feature-icon {
-            width: 70px;
-            height: 70px;
-            margin: 0 auto 20px;
-            border-radius: 20px;
+            width: 65px;
+            height: 65px;
+            margin: 0 auto 18px;
+            border-radius: 18px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 1.8rem;
         }
 
         .feature-icon.sound { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
@@ -392,14 +556,14 @@
         .feature-icon.secure { background: linear-gradient(135deg, #ec4899, #db2777); color: white; }
 
         .feature-card h3 {
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: 700;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: var(--dark);
         }
 
         .feature-card p {
-            font-size: 1.05rem;
+            font-size: 1rem;
             color: var(--gray);
             line-height: 1.5;
         }
@@ -436,23 +600,27 @@
         }
 
         /* 반응형 */
-        @media (max-width: 1024px) {
+        @media (max-width: 1200px) {
             .hero-content {
                 grid-template-columns: 1fr;
                 text-align: center;
-                gap: 40px;
+                gap: 30px;
             }
 
-            .hero h1 { font-size: 2.5rem; }
-            .hero-description { font-size: 1.2rem; }
-
-            .cta-buttons {
-                justify-content: center;
+            .hero-text {
+                order: 1;
             }
 
-            .phone-frame {
-                transform: none;
+            .phone-mockup {
+                order: 2;
             }
+
+            .phone-mockup:last-child {
+                order: 3;
+            }
+
+            .hero h1 { font-size: 2.2rem; }
+            .hero-description { font-size: 1.1rem; }
 
             .features-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -461,26 +629,26 @@
 
         @media (max-width: 600px) {
             .hero {
-                padding: 40px 20px;
+                padding: 30px 20px;
             }
 
-            .hero h1 { font-size: 2rem; }
-            .hero-description { font-size: 1.1rem; }
+            .hero h1 { font-size: 1.8rem; }
+            .hero-description { font-size: 1rem; }
 
             .btn {
-                padding: 15px 25px;
-                font-size: 1.1rem;
+                padding: 14px 24px;
+                font-size: 1rem;
                 width: 100%;
                 justify-content: center;
             }
 
-            .phone-screen {
-                width: 240px;
-                height: 420px;
+            .phone-screen, .sales-screen {
+                width: 220px;
+                height: 400px;
             }
 
             .features {
-                padding: 40px 20px;
+                padding: 35px 20px;
             }
 
             .features-grid {
@@ -488,7 +656,7 @@
             }
 
             .feature-card {
-                padding: 25px 20px;
+                padding: 22px 18px;
             }
         }
     </style>
@@ -498,6 +666,7 @@
         <!-- 히어로 섹션 -->
         <section class="hero">
             <div class="hero-content">
+                <!-- 왼쪽: 텍스트 -->
                 <div class="hero-text">
                     <div class="badge">
                         <i class="fas fa-bell"></i> 무료 입금 알림 앱
@@ -511,38 +680,117 @@
                         <strong>"입금확인, 10만원"</strong><br>
                         음성으로 바로 알려드립니다
                     </p>
-                    <div class="cta-buttons">
-                        <a href="https://play.google.com/store/apps/details?id=com.family.bankvoicealert" class="btn btn-primary" target="_blank" rel="noopener">
-                            <i class="fab fa-google-play"></i>
-                            무료 다운로드
-                        </a>
-                    </div>
+                    <a href="https://play.google.com/store/apps/details?id=com.family.bankvoicealert" class="btn btn-primary" target="_blank" rel="noopener">
+                        <i class="fab fa-google-play"></i>
+                        무료 다운로드
+                    </a>
                 </div>
 
+                <!-- 가운데: 입금 알림 화면 -->
                 <div class="phone-mockup">
-                    <div class="phone-frame">
-                        <div class="phone-screen">
-                            <div class="phone-notch"></div>
-                            <div class="notification-card">
-                                <div class="notification-header">
-                                    <div class="notification-icon">
-                                        <i class="fas fa-won-sign"></i>
+                    <div>
+                        <div class="phone-frame">
+                            <div class="phone-screen">
+                                <div class="phone-notch"></div>
+                                <div class="notification-card">
+                                    <div class="notification-header">
+                                        <div class="notification-icon">
+                                            <i class="fas fa-won-sign"></i>
+                                        </div>
+                                        <div>
+                                            <div class="notification-app">띵동 입금알리미</div>
+                                        </div>
+                                        <div class="notification-time">방금</div>
                                     </div>
-                                    <div>
-                                        <div class="notification-app">띵동 입금알리미</div>
-                                    </div>
-                                    <div class="notification-time">방금</div>
-                                </div>
-                                <div class="notification-body">
-                                    <div class="notification-title">입금 알림</div>
-                                    <div class="notification-amount">+10만원</div>
-                                    <div class="notification-voice">
-                                        <i class="fas fa-volume-high"></i>
-                                        "입금확인, 10만원"
+                                    <div class="notification-body">
+                                        <div class="notification-title">입금 알림</div>
+                                        <div class="notification-amount">+10만원</div>
+                                        <div class="notification-voice">
+                                            <i class="fas fa-volume-high"></i>
+                                            "입금확인, 10만원"
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+                        <div class="phone-label"><i class="fas fa-bell"></i> 실시간 알림</div>
+                    </div>
+                </div>
+
+                <!-- 오른쪽: 매출 집계 화면 -->
+                <div class="phone-mockup">
+                    <div>
+                        <div class="phone-frame">
+                            <div class="sales-screen">
+                                <div class="phone-notch"></div>
+                                <div class="sales-header">
+                                    <h3><i class="fas fa-chart-line"></i> 매출 집계</h3>
+                                </div>
+
+                                <div class="sales-month">
+                                    <button><i class="fas fa-chevron-left"></i></button>
+                                    <span>2025년 1월</span>
+                                    <button><i class="fas fa-chevron-right"></i></button>
+                                </div>
+
+                                <div class="mini-calendar">
+                                    <div class="calendar-weekdays">
+                                        <span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span>
+                                    </div>
+                                    <div class="calendar-days">
+                                        <span class="calendar-day empty">-</span>
+                                        <span class="calendar-day empty">-</span>
+                                        <span class="calendar-day empty">-</span>
+                                        <span class="calendar-day">1</span>
+                                        <span class="calendar-day has-sales">2</span>
+                                        <span class="calendar-day has-sales">3</span>
+                                        <span class="calendar-day">4</span>
+                                        <span class="calendar-day">5</span>
+                                        <span class="calendar-day has-sales">6</span>
+                                        <span class="calendar-day has-sales">7</span>
+                                        <span class="calendar-day">8</span>
+                                        <span class="calendar-day has-sales">9</span>
+                                        <span class="calendar-day has-sales">10</span>
+                                        <span class="calendar-day">11</span>
+                                        <span class="calendar-day">12</span>
+                                        <span class="calendar-day has-sales">13</span>
+                                        <span class="calendar-day has-sales selected">14</span>
+                                        <span class="calendar-day">15</span>
+                                        <span class="calendar-day has-sales">16</span>
+                                        <span class="calendar-day">17</span>
+                                        <span class="calendar-day">18</span>
+                                    </div>
+                                </div>
+
+                                <div class="daily-sales">
+                                    <div class="daily-header">
+                                        <span>1월 14일 (화)</span>
+                                        <span class="daily-total">+35만원</span>
+                                    </div>
+                                    <div class="sales-item">
+                                        <span class="sales-item-time">09:32</span>
+                                        <span class="sales-item-sender">김철수</span>
+                                        <span class="sales-item-amount">+15만원</span>
+                                    </div>
+                                    <div class="sales-item">
+                                        <span class="sales-item-time">14:15</span>
+                                        <span class="sales-item-sender">이영희</span>
+                                        <span class="sales-item-amount">+12만원</span>
+                                    </div>
+                                    <div class="sales-item">
+                                        <span class="sales-item-time">18:47</span>
+                                        <span class="sales-item-sender">박민수</span>
+                                        <span class="sales-item-amount">+8만원</span>
+                                    </div>
+                                </div>
+
+                                <div class="monthly-total">
+                                    <span>1월 총 매출</span>
+                                    <strong>385만원</strong>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="phone-label"><i class="fas fa-calendar-check"></i> 매출 집계</div>
                     </div>
                 </div>
             </div>
