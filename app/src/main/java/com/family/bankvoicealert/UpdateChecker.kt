@@ -60,10 +60,10 @@ class UpdateChecker(private val context: Context) {
                         onUpdateNeeded(forceUpdateInfo)
                     }
                 } else if (currentVersionCode < versionInfo.latestVersionCode) {
-                    // 업데이트 필요 상태 저장 (TTS 알림용)
+                    // 선택적 업데이트 - TTS 알림 없이 다이얼로그만 표시
                     prefs.edit()
-                        .putBoolean(PREF_NEEDS_UPDATE, true)
-                        .putString(PREF_UPDATE_TTS_MESSAGE, "띵동을 업데이트해주세요!")
+                        .putBoolean(PREF_NEEDS_UPDATE, false)
+                        .remove(PREF_UPDATE_TTS_MESSAGE)
                         .apply()
 
                     // 선택적 업데이트
