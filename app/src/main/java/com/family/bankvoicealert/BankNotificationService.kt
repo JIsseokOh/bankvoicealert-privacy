@@ -2,28 +2,76 @@ package com.family.bankvoicealert
 
 import android.app.Notification
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import java.util.Locale
+import java.util.concurrent.TimeUnit
 
 class BankNotificationService : NotificationListenerService() {
 
     companion object {
         private const val TAG = "BankNotificationService"
+        private val VERSION_CHECK_INTERVAL = TimeUnit.HOURS.toMillis(1) // 1시간마다 체크
     }
 
     private lateinit var ttsManager: TTSManager
     private lateinit var depositDataManager: DepositDataManager
+    private lateinit var updateChecker: UpdateChecker
     private var isServiceActive = false
+
+    private var versionCheckHandler: Handler? = null
+    private var versionCheckRunnable: Runnable? = null
 
     override fun onCreate() {
         super.onCreate()
         ttsManager = TTSManager.getInstance(this)
         depositDataManager = DepositDataManager.getInstance(this)
+        updateChecker = UpdateChecker(this)
         isServiceActive = true
         Log.d(TAG, "Service created")
+
+        // 주기적 버전 체크 시작
+        startPeriodicVersionCheck()
+    }
+
+    private fun startPeriodicVersionCheck() {
+        versionCheckHandler = Handler(Looper.getMainLooper())
+        versionCheckRunnable = object : Runnable {
+            override fun run() {
+                if (isServiceActive) {
+                    checkVersionInBackground()
+                    versionCheckHandler?.postDelayed(this, VERSION_CHECK_INTERVAL)
+                }
+            }
+        }
+        // 첫 체크는 1분 후에 시작 (서비스 초기화 완료 후)
+        versionCheckHandler?.postDelayed(versionCheckRunnable!!, TimeUnit.MINUTES.toMillis(1))
+        Log.d(TAG, "Periodic version check scheduled (every 1 hour)")
+    }
+
+    private fun checkVersionInBackground() {
+        Log.d(TAG, "Checking version in background...")
+        updateChecker.checkForUpdate(
+            onUpdateNeeded = { versionInfo ->
+                Log.d(TAG, "Update available: ${versionInfo.latestVersionName}, force: ${versionInfo.forceUpdate}")
+            },
+            onError = { e ->
+                Log.e(TAG, "Version check failed", e)
+            }
+        )
+    }
+
+    private fun stopPeriodicVersionCheck() {
+        versionCheckRunnable?.let { runnable ->
+            versionCheckHandler?.removeCallbacks(runnable)
+        }
+        versionCheckHandler = null
+        versionCheckRunnable = null
+        Log.d(TAG, "Periodic version check stopped")
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
@@ -176,6 +224,7 @@ class BankNotificationService : NotificationListenerService() {
     override fun onDestroy() {
         super.onDestroy()
         isServiceActive = false
+        stopPeriodicVersionCheck()
         Log.d(TAG, "Service destroyed")
     }
 }
