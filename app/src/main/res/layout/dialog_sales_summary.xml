@@ -160,7 +160,7 @@
             android:background="#444444"
             android:layout_marginVertical="8dp"/>
 
-        <!-- 선택된 날짜 표시 -->
+        <!-- 1. 선택된 날짜 표시 (연월일) -->
         <TextView
             android:id="@+id/tvSelectedDate"
             android:layout_width="match_parent"
@@ -172,28 +172,14 @@
             android:gravity="center"
             android:paddingVertical="8dp"/>
 
-        <!-- 입금 내역 리스트 (스크롤 가능) -->
-        <androidx.core.widget.NestedScrollView
-            android:layout_width="match_parent"
-            android:layout_height="180dp"
-            android:background="#1a1a1a"
-            android:padding="8dp">
-
-            <LinearLayout
-                android:id="@+id/depositListContainer"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="vertical"/>
-        </androidx.core.widget.NestedScrollView>
-
-        <!-- 당일 매출 합계 -->
+        <!-- 2. 당일 매출 합계 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:padding="16dp"
             android:background="#1e3a5f"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="8dp"
             android:gravity="center_vertical">
 
             <TextView
@@ -215,7 +201,7 @@
                 android:textStyle="bold"/>
         </LinearLayout>
 
-        <!-- 월 매출 합계 -->
+        <!-- 3. 월 매출 합계 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -243,6 +229,21 @@
                 android:textSize="20sp"
                 android:textStyle="bold"/>
         </LinearLayout>
+
+        <!-- 4. 입금 내역 리스트 (기록) -->
+        <androidx.core.widget.NestedScrollView
+            android:layout_width="match_parent"
+            android:layout_height="180dp"
+            android:background="#1a1a1a"
+            android:padding="8dp"
+            android:layout_marginTop="12dp">
+
+            <LinearLayout
+                android:id="@+id/depositListContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"/>
+        </androidx.core.widget.NestedScrollView>
 
         <!-- 닫기 버튼 -->
         <Button
