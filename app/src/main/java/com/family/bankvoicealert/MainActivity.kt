@@ -940,15 +940,13 @@ class MainActivity : AppCompatActivity() {
 
         dialog.show()
 
-        // 다이얼로그의 최대 높이를 화면 높이의 80%로 제한
+        // 다이얼로그를 전체화면으로 설정
         dialog.window?.let { window ->
             val displayMetrics = resources.displayMetrics
-            val maxHeight = (displayMetrics.heightPixels * 0.8).toInt()
-
-            window.attributes?.let { params ->
-                params.height = maxHeight
-                window.attributes = params
-            }
+            window.setLayout(
+                displayMetrics.widthPixels,
+                displayMetrics.heightPixels
+            )
         }
     }
 }
