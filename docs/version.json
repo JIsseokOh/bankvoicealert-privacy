@@ -1,6 +1,6 @@
 {
-  "latestVersionCode": 62,
-  "latestVersionName": "1.3.31",
+  "latestVersionCode": 59,
+  "latestVersionName": "1.3.26",
   "minimumVersionCode": 59,
   "updateMessage": "새로운 업데이트가 있습니다.\n\n주요 업데이트:\n- 💰 매출 집계 기능 추가\n- 구버전 사용자 업데이트 음성 안내\n- UI 개선\n- 안정성 개선\n\n업데이트를 권장합니다.",
   "playStoreUrl": "https://play.google.com/store/apps/details?id=com.family.bankvoicealert"
