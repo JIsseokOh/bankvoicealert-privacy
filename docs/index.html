@@ -7,7 +7,7 @@
     <!-- SEO 최적화 메타 태그 -->
     <title>입금알리미 - 띵동 입금알리미 | 무료 은행 입금 알림 앱</title>
     <meta name="description" content="입금알리미 앱 띵동! 은행 입금 알림을 음성으로 바로 알려드립니다. 모든 은행 지원, 무료 입금 알림, 입출금 내역 TTS 음성 안내. 사장님 필수 앱!">
-    <meta name="keywords" content="입금알리미, 입금 알림, 은행 입금 알림, 입출금 알림, 띵동 입금알리미, 무료 입금알리미, 계좌 입금 알림, 입금 알림 앱, TTS 입금 알림, 음성 입금 알림, 사장님 입금 알림, 매장 입금 알림">
+    <meta name="keywords" content="입금알리미, 입금 알림, 은행 입금 알림, 입출금 알림, 띵동 입금알리미, 무료 입금알리미, 계좌 입금 알림, 입금 알림 앱, TTS 입금 알림, 음성 입금 알림, 사장님 입금 알림, 매장 입금 알림, 매출 집계">
     <meta name="author" content="오지석">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://jisseokoh.github.io/bankvoicealert-privacy/">
@@ -315,25 +315,35 @@
 
         .notification-body {
             color: var(--dark);
+            text-align: center;
         }
 
         .notification-title {
             font-weight: 700;
-            font-size: 1rem;
-            margin-bottom: 5px;
-        }
-
-        .notification-text {
-            font-size: 0.95rem;
-            color: var(--gray);
+            font-size: 1.1rem;
+            margin-bottom: 8px;
+            color: var(--primary);
         }
 
         .notification-amount {
-            font-size: 1.8rem;
+            font-size: 2.2rem;
             font-weight: 900;
             color: var(--secondary);
-            text-align: center;
-            margin-top: 15px;
+            margin: 10px 0;
+        }
+
+        .notification-voice {
+            font-size: 0.9rem;
+            color: var(--gray);
+            background: #f1f5f9;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+
+        .notification-voice i {
+            color: var(--accent);
+            margin-right: 5px;
         }
 
         /* 기능 섹션 */
@@ -378,7 +388,7 @@
 
         .feature-icon.sound { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
         .feature-icon.bank { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; }
-        .feature-icon.free { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .feature-icon.sales { background: linear-gradient(135deg, #10b981, #059669); color: white; }
         .feature-icon.secure { background: linear-gradient(135deg, #ec4899, #db2777); color: white; }
 
         .feature-card h3 {
@@ -497,7 +507,8 @@
                         입금알리미
                     </h1>
                     <p class="hero-description">
-                        돈이 들어오면 <strong>"홍길동님 10만원 입금"</strong><br>
+                        입금이 들어오면<br>
+                        <strong>"입금확인, 10만원"</strong><br>
                         음성으로 바로 알려드립니다
                     </p>
                     <div class="cta-buttons">
@@ -524,8 +535,11 @@
                                 </div>
                                 <div class="notification-body">
                                     <div class="notification-title">입금 알림</div>
-                                    <div class="notification-text">홍길동님으로부터</div>
-                                    <div class="notification-amount">+100,000원</div>
+                                    <div class="notification-amount">+10만원</div>
+                                    <div class="notification-voice">
+                                        <i class="fas fa-volume-high"></i>
+                                        "입금확인, 10만원"
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -542,7 +556,7 @@
                         <i class="fas fa-volume-high"></i>
                     </div>
                     <h3>음성으로 알림</h3>
-                    <p>입금 금액과 보낸 분을<br>소리로 읽어드려요</p>
+                    <p>입금 금액을<br>소리로 읽어드려요</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon bank">
@@ -552,11 +566,11 @@
                     <p>국민, 신한, 하나, 농협<br>카카오뱅크 등 전부 가능</p>
                 </div>
                 <div class="feature-card">
-                    <div class="feature-icon free">
-                        <i class="fas fa-gift"></i>
+                    <div class="feature-icon sales">
+                        <i class="fas fa-calendar-check"></i>
                     </div>
-                    <h3>완전 무료</h3>
-                    <p>평생 무료로<br>사용하세요</p>
+                    <h3>매출 집계</h3>
+                    <p>일별/월별 입금 내역<br>한눈에 확인</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon secure">
