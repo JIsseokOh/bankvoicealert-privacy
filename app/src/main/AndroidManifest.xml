@@ -8,15 +8,10 @@
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-    <!-- SMS 권한 제거 (Google Play 정책 위반 해결) -->
-    <!-- <uses-permission android:name="android.permission.RECEIVE_SMS" /> -->
-    <!-- <uses-permission android:name="android.permission.READ_SMS" /> -->
-
-    <!-- 미사용 권한 제거 -->
-    <!-- <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" /> -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <!-- AdMob 권한 -->
     <uses-permission android:name="android.permission.INTERNET" />
@@ -24,6 +19,20 @@
 
     <!-- Play Billing 권한 -->
     <uses-permission android:name="com.android.vending.BILLING" />
+
+    <queries>
+        <intent>
+            <action android:name="com.android.vending.billing.InAppBillingService.BIND" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.support.customtabs.action.CustomTabsService" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="true"
@@ -36,10 +45,10 @@
         android:enableOnBackInvokedCallback="true"
         tools:targetApi="35">
 
-        <!-- AdMob App ID - Test ID for development -->
+        <!-- AdMob App ID -->
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713"/>
+            android:value="ca-app-pub-8476619670449177~1979030764"/>
 
         <!-- 메인 액티비티 -->
         <activity
@@ -53,16 +62,9 @@
             </intent-filter>
         </activity>
 
-        <!-- 매출 집계 액티비티 -->
-        <activity
-            android:name=".SalesSummaryActivity"
-            android:exported="false"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.BankVoiceAlert" />
-
-        <!-- 알림 리스너 서비스 (이것만으로도 충분히 입금 알림 가능) -->
+        <!-- 알림 리스너 서비스 (BankNotificationService) -->
         <service
-            android:name=".NotificationListener"
+            android:name=".BankNotificationService"
             android:exported="true"
             android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
             <intent-filter>
@@ -74,19 +76,12 @@
         <service
             android:name=".ForegroundService"
             android:exported="false"
-            android:foregroundServiceType="dataSync" />
+            android:foregroundServiceType="mediaPlayback" />
 
-        <!-- SMS 수신기 제거 (Google Play 정책 위반 해결) -->
-        <!--
+        <!-- 서비스 재시작 리시버 -->
         <receiver
-            android:name=".SmsReceiver"
-            android:exported="true"
-            android:permission="android.permission.BROADCAST_SMS">
-            <intent-filter android:priority="999">
-                <action android:name="android.provider.Telephony.SMS_RECEIVED" />
-            </intent-filter>
-        </receiver>
-        -->
+            android:name=".ServiceRestartReceiver"
+            android:exported="false" />
 
     </application>
 
