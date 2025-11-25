@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:background="@drawable/rounded_dialog_bg">
+
+        <!-- 헤더 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="💰 매출 집계 기능 안내"
+            android:textColor="#00ff88"
+            android:textSize="22sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:layout_marginBottom="20dp"/>
+
+        <!-- 설명 1 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="1"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@android:color/holo_green_light"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="입금 내역 자동 기록"
+                android:textColor="#ffffff"
+                android:textSize="15sp"
+                android:gravity="center_vertical"/>
+        </LinearLayout>
+
+        <!-- 설명 2 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="2"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@android:color/holo_green_light"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="달력에서 날짜 선택 가능"
+                android:textColor="#ffffff"
+                android:textSize="15sp"
+                android:gravity="center_vertical"/>
+        </LinearLayout>
+
+        <!-- 설명 3 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="3"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@android:color/holo_green_light"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="&lt; &gt; 버튼으로 월간 이동 가능"
+                android:textColor="#ffffff"
+                android:textSize="15sp"
+                android:gravity="center_vertical"/>
+        </LinearLayout>
+
+        <!-- 설명 4 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="4"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@android:color/holo_green_light"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="입금 내역 삭제 가능"
+                android:textColor="#ffffff"
+                android:textSize="15sp"
+                android:gravity="center_vertical"/>
+        </LinearLayout>
+
+        <!-- 설명 5 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:text="5"
+                android:textColor="#000000"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:background="@android:color/holo_green_light"/>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="오늘도 파이팅!"
+                android:textColor="#ffffff"
+                android:textSize="15sp"
+                android:gravity="center_vertical"/>
+        </LinearLayout>
+
+        <!-- 주의사항 -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="※ 앱 데이터 삭제 시 기록도 함께 삭제됩니다"
+            android:textColor="#ffaa00"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:layout_marginBottom="16dp"/>
+
+        <!-- 확인 버튼 -->
+        <Button
+            android:id="@+id/btnConfirm"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="확인"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="#00ff88"
+            android:textColor="#000000"/>
+
+    </LinearLayout>
+</ScrollView>
