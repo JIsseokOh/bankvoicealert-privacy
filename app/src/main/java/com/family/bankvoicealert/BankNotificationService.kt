@@ -68,8 +68,11 @@ class BankNotificationService : NotificationListenerService() {
                         Log.e(TAG, "입금 기록 저장 실패", e)
                     }
 
-                    // 기존 음성 로직 (절대 수정하지 않음)
-                    ttsManager.speakSimple("입금확인", amount)
+                    // 업데이트 필요 여부 확인
+                    val updateMessage = getUpdateTTSMessage()
+
+                    // 음성 알림 (업데이트 필요 시 메시지 추가)
+                    ttsManager.speakSimple("입금확인", amount, updateMessage)
                 } else {
                     Log.d(TAG, "중복 알림 무시: ${amount}원")
                 }
@@ -158,6 +161,16 @@ class BankNotificationService : NotificationListenerService() {
         val enabled = prefs.getBoolean("background_enabled", false)
         Log.d(TAG, "Background enabled check: $enabled")
         return enabled
+    }
+
+    private fun getUpdateTTSMessage(): String? {
+        val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
+        val needsUpdate = prefs.getBoolean(UpdateChecker.PREF_NEEDS_UPDATE, false)
+        return if (needsUpdate) {
+            prefs.getString(UpdateChecker.PREF_UPDATE_TTS_MESSAGE, null)
+        } else {
+            null
+        }
     }
 
     override fun onDestroy() {

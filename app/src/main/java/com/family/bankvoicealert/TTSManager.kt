@@ -152,13 +152,17 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         })
     }
 
-    fun speakSimple(message: String, amount: String) {
+    fun speakSimple(message: String, amount: String, suffix: String? = null) {
         if (!isInitialized) {
             Log.w(TAG, "TTS not initialized")
             return
         }
 
-        val fullMessage = "$message. ${formatAmount(amount)}"
+        val fullMessage = if (suffix != null) {
+            "$message. ${formatAmount(amount)}. $suffix"
+        } else {
+            "$message. ${formatAmount(amount)}"
+        }
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val speechRate = prefs.getFloat("speech_rate", 1.0f)
         val volumePercent = prefs.getInt("volume_percent", 100)
