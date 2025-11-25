@@ -3,8 +3,8 @@
 은행 입금 알림을 음성으로 안내하는 Android 앱
 
 [![Play Store](https://img.shields.io/badge/Google%20Play-다운로드-green?style=flat-square&logo=google-play)](https://play.google.com/store/apps/details?id=com.family.bankvoicealert)
-[![Android](https://img.shields.io/badge/Android-5.0%2B-blue?style=flat-square&logo=android)](https://developer.android.com)
-[![License](https://img.shields.io/badge/License-Private-red?style=flat-square)](LICENSE)
+![Android](https://img.shields.io/badge/Android-5.0%2B-blue?style=flat-square&logo=android)
+![License](https://img.shields.io/badge/License-Private-red?style=flat-square)
 
 ---
 
