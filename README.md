@@ -111,7 +111,7 @@ app/src/main/java/com/family/bankvoicealert/
 
 ## 개인정보처리방침
 
-[개인정보처리방침 보기](https://jisseokoh.github.io/bankvoicealert-privacy/privacy_policy.html)
+[개인정보처리방침 보기](https://jisseokoh.github.io/bankvoicealert-privacy/)
 
 ---
 
