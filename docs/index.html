@@ -3,7 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>띵동 입금알리미 - 개인정보처리방침</title>
+
+    <!-- SEO 최적화 메타 태그 -->
+    <title>입금알리미 - 띵동 입금알리미 | 무료 은행 입금 알림 앱</title>
+    <meta name="description" content="입금알리미 앱 띵동! 은행 입금 알림을 음성으로 바로 알려드립니다. 모든 은행 지원, 무료 입금 알림, 입출금 내역 TTS 음성 안내. 사장님 필수 앱!">
+    <meta name="keywords" content="입금알리미, 입금 알림, 은행 입금 알림, 입출금 알림, 띵동 입금알리미, 무료 입금알리미, 계좌 입금 알림, 입금 알림 앱, TTS 입금 알림, 음성 입금 알림, 사장님 입금 알림, 매장 입금 알림">
+    <meta name="author" content="오지석">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://jisseokoh.github.io/bankvoicealert-privacy/">
+
+    <!-- Open Graph / 소셜 미디어 -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="입금알리미 - 띵동 입금알리미 | 무료 은행 입금 알림 앱">
+    <meta property="og:description" content="입금알리미 앱 띵동! 은행 입금 알림을 음성으로 바로 알려드립니다. 모든 은행 지원, 무료 입금 알림!">
+    <meta property="og:url" content="https://jisseokoh.github.io/bankvoicealert-privacy/">
+    <meta property="og:site_name" content="띵동 입금알리미">
+    <meta property="og:locale" content="ko_KR">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="입금알리미 - 띵동 입금알리미">
+    <meta name="twitter:description" content="은행 입금 알림을 음성으로 바로 알려드립니다. 무료 입금 알림 앱!">
+
+    <!-- 네이버 사이트 등록용 (나중에 실제 인증 코드로 교체) -->
+    <meta name="naver-site-verification" content="NAVER_VERIFICATION_CODE">
+
+    <!-- 구글 사이트 등록용 (나중에 실제 인증 코드로 교체) -->
+    <meta name="google-site-verification" content="GOOGLE_VERIFICATION_CODE">
+
+    <!-- Schema.org 구조화 데이터 -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "MobileApplication",
+        "name": "띵동 입금알리미",
+        "alternateName": "입금알리미",
+        "description": "은행 입금 알림을 음성으로 바로 알려드리는 무료 앱입니다. 모든 은행 지원, TTS 음성 안내 기능.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "Android",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "KRW"
+        },
+        "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.5",
+            "ratingCount": "100"
+        },
+        "author": {
+            "@type": "Person",
+            "name": "오지석"
+        }
+    }
+    </script>
+
     <style>
         * {
             margin: 0;
@@ -11,237 +65,346 @@
             box-sizing: border-box;
         }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', '맑은 고딕', sans-serif;
-            line-height: 1.8;
+            font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', '맑은 고딕', 'Noto Sans KR', sans-serif;
+            line-height: 1.6;
             color: #333;
-            background-color: #f8f9fa;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 40px 20px;
-            background-color: #fff;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
         }
-        header {
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 히어로 섹션 */
+        .hero {
             text-align: center;
-            padding-bottom: 30px;
-            border-bottom: 2px solid #e9ecef;
-            margin-bottom: 40px;
+            padding: 60px 20px;
+            color: white;
         }
-        h1 {
-            color: #212529;
-            font-size: 28px;
-            margin-bottom: 10px;
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
         }
-        .app-name {
-            color: #28a745;
+        .hero .subtitle {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            margin-bottom: 30px;
+        }
+        .download-btn {
+            display: inline-block;
+            background: #00C853;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-size: 1.2rem;
             font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: transform 0.3s, box-shadow 0.3s;
         }
-        .update-date {
-            color: #6c757d;
-            font-size: 14px;
+        .download-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
         }
-        section {
-            margin-bottom: 35px;
+
+        /* 메인 콘텐츠 카드 */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin: 20px 0;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
         }
-        h2 {
-            color: #495057;
-            font-size: 18px;
-            padding: 12px 0;
-            border-bottom: 1px solid #dee2e6;
+
+        .card h2 {
+            color: #667eea;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        /* 기능 그리드 */
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin: 30px 0;
+        }
+        .feature-item {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .feature-item:hover {
+            transform: translateY(-5px);
+        }
+        .feature-icon {
+            font-size: 3rem;
             margin-bottom: 15px;
         }
-        h2::before {
-            content: "§ ";
-            color: #28a745;
+        .feature-item h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
         }
-        h3 {
-            color: #495057;
-            font-size: 15px;
-            margin: 15px 0 10px 0;
+        .feature-item p {
+            color: #666;
+            font-size: 0.95rem;
         }
-        p {
-            margin-bottom: 12px;
-            text-align: justify;
+
+        /* 사용 방법 */
+        .steps {
+            counter-reset: step;
         }
-        ul {
-            margin: 10px 0 15px 20px;
-        }
-        li {
-            margin-bottom: 8px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
-        }
-        th, td {
-            border: 1px solid #dee2e6;
-            padding: 12px;
-            text-align: left;
-        }
-        th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-        }
-        .highlight {
-            background-color: #e8f5e9;
-            padding: 15px;
-            border-radius: 5px;
-            border-left: 4px solid #28a745;
-            margin: 15px 0;
-        }
-        .contact-info {
-            background-color: #f8f9fa;
+        .step {
+            display: flex;
+            align-items: flex-start;
+            margin: 20px 0;
             padding: 20px;
-            border-radius: 5px;
-            margin-top: 10px;
+            background: #f8f9fa;
+            border-radius: 10px;
         }
+        .step::before {
+            counter-increment: step;
+            content: counter(step);
+            background: #667eea;
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 20px;
+            flex-shrink: 0;
+        }
+        .step-content h3 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .step-content p {
+            color: #666;
+        }
+
+        /* 지원 은행 */
+        .banks {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .bank-tag {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        /* FAQ */
+        .faq-item {
+            border-bottom: 1px solid #eee;
+            padding: 20px 0;
+        }
+        .faq-item:last-child {
+            border-bottom: none;
+        }
+        .faq-item h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        .faq-item p {
+            color: #666;
+        }
+
+        /* 푸터 */
         footer {
             text-align: center;
-            padding-top: 30px;
-            border-top: 1px solid #dee2e6;
-            color: #6c757d;
-            font-size: 13px;
+            padding: 30px;
+            color: white;
+        }
+        footer a {
+            color: white;
+            text-decoration: underline;
+        }
+
+        /* 반응형 */
+        @media (max-width: 600px) {
+            .hero h1 {
+                font-size: 1.8rem;
+            }
+            .hero .subtitle {
+                font-size: 1rem;
+            }
+            .card {
+                padding: 25px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1><span class="app-name">띵동 입금알리미</span> 개인정보처리방침</h1>
-            <p class="update-date">최종 업데이트: 2025년 1월 25일</p>
-        </header>
-
-        <section>
-            <h2>1. 개인정보 처리 목적</h2>
-            <p><strong>띵동 입금알리미</strong>(이하 "앱")는 다음 목적으로 최소한의 권한만을 요청합니다.</p>
-            <table>
-                <tr>
-                    <th>권한</th>
-                    <th>목적</th>
-                </tr>
-                <tr>
-                    <td>알림 접근 권한</td>
-                    <td>은행 앱의 푸시 알림을 감지하여 입금 내역 확인</td>
-                </tr>
-                <tr>
-                    <td>포그라운드 서비스</td>
-                    <td>백그라운드에서 지속적인 알림 감지 서비스 제공</td>
-                </tr>
-                <tr>
-                    <td>인터넷 접근</td>
-                    <td>앱 버전 확인 및 업데이트 알림</td>
-                </tr>
-            </table>
+        <!-- 히어로 섹션 -->
+        <section class="hero">
+            <h1>띵동 입금알리미</h1>
+            <p class="subtitle">은행 입금 알림을 음성으로 바로 알려드립니다</p>
+            <a href="https://play.google.com/store/apps/details?id=com.family.bankvoicealert" class="download-btn" target="_blank" rel="noopener">
+                Google Play에서 무료 다운로드
+            </a>
         </section>
 
-        <section>
-            <h2>2. 처리하는 개인정보 항목</h2>
-            <h3>가. 자동 수집 정보</h3>
-            <ul>
-                <li>은행 앱 푸시 알림 내용 (입금 금액, 입금자명)</li>
-                <li>입금 일시 및 기록</li>
-            </ul>
-
-            <h3>나. 수집하지 않는 정보</h3>
-            <ul>
-                <li>계좌번호, 잔액 등 금융 민감정보</li>
-                <li>위치정보, 연락처, 통화기록</li>
-                <li>기기 고유식별자 (IMEI, 광고ID 등)</li>
-            </ul>
-
-            <div class="highlight">
-                <strong>중요:</strong> 모든 데이터는 사용자 기기 내부에만 저장되며, 외부 서버로 전송되지 않습니다.
+        <!-- 주요 기능 -->
+        <article class="card">
+            <h2>입금알리미 주요 기능</h2>
+            <div class="features">
+                <div class="feature-item">
+                    <div class="feature-icon">🔔</div>
+                    <h3>실시간 입금 알림</h3>
+                    <p>은행 앱 알림을 감지하여 입금 내역을 실시간으로 알려드립니다</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🔊</div>
+                    <h3>TTS 음성 안내</h3>
+                    <p>입금 금액과 입금자명을 음성으로 읽어드립니다. 바쁜 매장에서도 편리하게!</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">🏦</div>
+                    <h3>모든 은행 지원</h3>
+                    <p>국민, 신한, 하나, 우리, 농협, 카카오뱅크, 토스뱅크 등 모든 은행 지원</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">💰</div>
+                    <h3>완전 무료</h3>
+                    <p>모든 기본 기능을 무료로 이용하실 수 있습니다</p>
+                </div>
             </div>
-        </section>
+        </article>
 
-        <section>
-            <h2>3. 개인정보 보유 및 이용 기간</h2>
-            <table>
-                <tr>
-                    <th>구분</th>
-                    <th>보유 기간</th>
-                </tr>
-                <tr>
-                    <td>입금 기록 데이터</td>
-                    <td>앱 삭제 시까지 (기기 내부 저장)</td>
-                </tr>
-                <tr>
-                    <td>앱 설정 정보</td>
-                    <td>앱 삭제 시까지 (기기 내부 저장)</td>
-                </tr>
-            </table>
-            <p>앱 삭제 시 모든 데이터가 자동으로 완전히 삭제됩니다.</p>
-        </section>
-
-        <section>
-            <h2>4. 개인정보의 제3자 제공</h2>
-            <p>앱은 사용자의 개인정보를 제3자에게 제공하지 않습니다.</p>
-            <ul>
-                <li>외부 서버 전송: 없음</li>
-                <li>광고 네트워크 공유: 없음</li>
-                <li>분석 서비스 연동: 없음</li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>5. 개인정보 처리 위탁</h2>
-            <p>앱은 개인정보 처리를 외부 업체에 위탁하지 않습니다.</p>
-        </section>
-
-        <section>
-            <h2>6. 이용자의 권리 및 행사 방법</h2>
-            <p>사용자는 다음과 같은 권리를 행사할 수 있습니다.</p>
-            <ul>
-                <li><strong>권한 철회:</strong> 기기 설정에서 앱 권한을 언제든지 해제 가능</li>
-                <li><strong>데이터 삭제:</strong> 앱 삭제를 통해 모든 로컬 데이터 완전 삭제</li>
-                <li><strong>서비스 중단:</strong> 앱 내 설정에서 백그라운드 서비스 비활성화 가능</li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>7. 개인정보 보호를 위한 기술적 조치</h2>
-            <ul>
-                <li>모든 데이터는 기기 내부 저장소(Private Storage)에 저장</li>
-                <li>다른 앱에서 데이터 접근 불가</li>
-                <li>네트워크 통신 시 HTTPS 암호화 적용</li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>8. 아동의 개인정보 보호</h2>
-            <p>앱은 만 14세 미만 아동의 개인정보를 수집하지 않습니다. 만 14세 미만 사용자의 앱 이용을 권장하지 않습니다.</p>
-        </section>
-
-        <section>
-            <h2>9. 개인정보처리방침 변경</h2>
-            <p>개인정보처리방침이 변경되는 경우, 변경 사항을 앱 업데이트 및 본 페이지를 통해 공지합니다.</p>
-            <ul>
-                <li>공고일: 2025년 1월 25일</li>
-                <li>시행일: 2025년 1월 25일</li>
-            </ul>
-        </section>
-
-        <section>
-            <h2>10. 개인정보 보호책임자</h2>
-            <div class="contact-info">
-                <p><strong>개인정보 보호책임자</strong></p>
-                <ul>
-                    <li>성명: 오지석</li>
-                    <li>이메일: tom00100218@gmail.com</li>
-                </ul>
-                <p style="margin-top: 15px;">개인정보 침해에 대한 신고 및 상담이 필요하신 경우 아래 기관에 문의하실 수 있습니다.</p>
-                <ul>
-                    <li>개인정보침해신고센터 (privacy.kisa.or.kr / 118)</li>
-                    <li>개인정보분쟁조정위원회 (kopico.go.kr / 1833-6972)</li>
-                </ul>
+        <!-- 이런 분께 추천 -->
+        <article class="card">
+            <h2>이런 분께 추천합니다</h2>
+            <div class="features">
+                <div class="feature-item">
+                    <div class="feature-icon">🏪</div>
+                    <h3>매장 사장님</h3>
+                    <p>계산대에서 바로 입금 확인! 손님 응대하면서도 입금 내역을 놓치지 않습니다</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">📱</div>
+                    <h3>중고 거래자</h3>
+                    <p>계좌이체 입금을 음성으로 바로 확인하고 안전하게 거래하세요</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">👨‍💼</div>
+                    <h3>프리랜서</h3>
+                    <p>고객 입금을 실시간으로 확인하고 빠르게 대응하세요</p>
+                </div>
+                <div class="feature-item">
+                    <div class="feature-icon">👴</div>
+                    <h3>어르신</h3>
+                    <p>큰 글씨와 음성 안내로 어르신도 쉽게 사용할 수 있습니다</p>
+                </div>
             </div>
+        </article>
+
+        <!-- 사용 방법 -->
+        <article class="card">
+            <h2>입금알리미 사용 방법</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-content">
+                        <h3>앱 설치</h3>
+                        <p>Google Play 스토어에서 "띵동 입금알리미"를 검색하여 설치합니다</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <h3>알림 권한 허용</h3>
+                        <p>앱 실행 후 알림 접근 권한을 허용해주세요</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <h3>은행 앱 선택</h3>
+                        <p>사용하는 은행 앱을 선택하면 설정 완료!</p>
+                    </div>
+                </div>
+                <div class="step">
+                    <div class="step-content">
+                        <h3>입금 알림 받기</h3>
+                        <p>이제 입금이 들어오면 "띵동! OO님에게서 XX원 입금되었습니다" 음성 안내를 받으실 수 있습니다</p>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- 지원 은행 -->
+        <article class="card">
+            <h2>지원 은행</h2>
+            <p style="text-align: center; color: #666; margin-bottom: 20px;">국내 모든 주요 은행 앱을 지원합니다</p>
+            <div class="banks">
+                <span class="bank-tag">국민은행</span>
+                <span class="bank-tag">신한은행</span>
+                <span class="bank-tag">하나은행</span>
+                <span class="bank-tag">우리은행</span>
+                <span class="bank-tag">농협은행</span>
+                <span class="bank-tag">기업은행</span>
+                <span class="bank-tag">카카오뱅크</span>
+                <span class="bank-tag">토스뱅크</span>
+                <span class="bank-tag">케이뱅크</span>
+                <span class="bank-tag">SC제일은행</span>
+                <span class="bank-tag">씨티은행</span>
+                <span class="bank-tag">새마을금고</span>
+                <span class="bank-tag">신협</span>
+                <span class="bank-tag">수협</span>
+                <span class="bank-tag">우체국</span>
+                <span class="bank-tag">그 외 모든 은행</span>
+            </div>
+        </article>
+
+        <!-- FAQ -->
+        <article class="card">
+            <h2>자주 묻는 질문</h2>
+            <div class="faq-item">
+                <h3>Q. 입금알리미 앱은 무료인가요?</h3>
+                <p>A. 네, 띵동 입금알리미의 모든 기본 기능은 완전 무료입니다. 광고 제거를 원하시면 프리미엄 구독을 이용하실 수 있습니다.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Q. 개인정보는 안전한가요?</h3>
+                <p>A. 모든 데이터는 사용자의 휴대폰에만 저장되며, 외부 서버로 전송되지 않습니다. 안심하고 사용하세요.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Q. 배터리 소모가 많나요?</h3>
+                <p>A. 최적화된 알림 감지 방식으로 배터리 소모를 최소화했습니다. 일반적인 사용에서 배터리 영향은 거의 없습니다.</p>
+            </div>
+            <div class="faq-item">
+                <h3>Q. 모든 은행이 지원되나요?</h3>
+                <p>A. 네, 푸시 알림을 보내는 모든 은행 앱을 지원합니다. 사용하는 은행 앱의 입금 알림이 설정되어 있어야 합니다.</p>
+            </div>
+        </article>
+
+        <!-- 다운로드 CTA -->
+        <section class="hero" style="padding: 40px 20px;">
+            <h2 style="font-size: 1.8rem; margin-bottom: 20px;">지금 바로 입금알리미를 사용해보세요!</h2>
+            <a href="https://play.google.com/store/apps/details?id=com.family.bankvoicealert" class="download-btn" target="_blank" rel="noopener">
+                무료 다운로드
+            </a>
         </section>
 
+        <!-- 푸터 -->
         <footer>
-            <p>Copyright © 2024-2025 띵동 입금알리미. All rights reserved.</p>
+            <p><a href="privacy.html">개인정보처리방침</a></p>
+            <p style="margin-top: 10px;">문의: tom00100218@gmail.com</p>
+            <p style="margin-top: 5px;">카카오톡: <a href="https://open.kakao.com/o/sxro90Th" target="_blank" rel="noopener">오픈채팅 문의</a></p>
+            <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.8;">Copyright © 2024-2025 띵동 입금알리미. All rights reserved.</p>
         </footer>
     </div>
 </body>

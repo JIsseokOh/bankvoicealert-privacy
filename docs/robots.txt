@@ -1,0 +1,6 @@
+# 띵동 입금알리미 웹사이트 robots.txt
+User-agent: *
+Allow: /
+
+# 사이트맵 위치
+Sitemap: https://jisseokoh.github.io/bankvoicealert-privacy/sitemap.xml
