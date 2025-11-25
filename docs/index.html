@@ -25,11 +25,8 @@
     <meta name="twitter:title" content="입금알리미 - 띵동 입금알리미">
     <meta name="twitter:description" content="은행 입금 알림을 음성으로 바로 알려드립니다. 무료 입금 알림 앱!">
 
-    <!-- 네이버 사이트 등록용 (나중에 실제 인증 코드로 교체) -->
-    <meta name="naver-site-verification" content="NAVER_VERIFICATION_CODE">
-
-    <!-- 구글 사이트 등록용 (나중에 실제 인증 코드로 교체) -->
-    <meta name="google-site-verification" content="GOOGLE_VERIFICATION_CODE">
+    <!-- 네이버 사이트 등록용 -->
+    <meta name="naver-site-verification" content="24d6bede00a960b617d6b4001b2f81c95865d71c" />
 
     <!-- Schema.org 구조화 데이터 -->
     <script type="application/ld+json">
@@ -45,15 +42,6 @@
             "@type": "Offer",
             "price": "0",
             "priceCurrency": "KRW"
-        },
-        "aggregateRating": {
-            "@type": "AggregateRating",
-            "ratingValue": "4.5",
-            "ratingCount": "100"
-        },
-        "author": {
-            "@type": "Person",
-            "name": "오지석"
         }
     }
     </script>
@@ -64,348 +52,186 @@
             padding: 0;
             box-sizing: border-box;
         }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+        }
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Malgun Gothic', '맑은 고딕', 'Noto Sans KR', sans-serif;
-            line-height: 1.6;
+            font-family: 'Malgun Gothic', '맑은 고딕', sans-serif;
+            background: linear-gradient(135deg, #4a90d9 0%, #667eea 100%);
             color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
         }
         .container {
-            max-width: 900px;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px 50px;
+            max-width: 1600px;
             margin: 0 auto;
-            padding: 20px;
         }
 
-        /* 히어로 섹션 */
-        .hero {
-            text-align: center;
-            padding: 60px 20px;
+        /* 왼쪽: 앱 소개 */
+        .left-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
             color: white;
         }
-        .hero h1 {
-            font-size: 2.5rem;
-            margin-bottom: 15px;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        .app-title {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        .hero .subtitle {
-            font-size: 1.3rem;
+        .app-subtitle {
+            font-size: 1.8rem;
+            margin-bottom: 40px;
             opacity: 0.95;
-            margin-bottom: 30px;
+            line-height: 1.5;
         }
         .download-btn {
             display: inline-block;
             background: #00C853;
             color: white;
-            padding: 15px 40px;
-            border-radius: 50px;
+            padding: 25px 50px;
+            border-radius: 60px;
             text-decoration: none;
-            font-size: 1.2rem;
+            font-size: 1.8rem;
             font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
             transition: transform 0.3s, box-shadow 0.3s;
+            text-align: center;
+            width: fit-content;
         }
         .download-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
         }
 
-        /* 메인 콘텐츠 카드 */
-        .card {
+        /* 오른쪽: 기능 소개 */
+        .right-section {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 20px;
+        }
+        .feature-card {
             background: white;
             border-radius: 20px;
-            padding: 40px;
-            margin: 20px 0;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-        }
-
-        .card h2 {
-            color: #667eea;
-            font-size: 1.8rem;
-            margin-bottom: 25px;
-            text-align: center;
-        }
-
-        /* 기능 그리드 */
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            padding: 25px 30px;
+            display: flex;
+            align-items: center;
             gap: 25px;
-            margin: 30px 0;
-        }
-        .feature-item {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            text-align: center;
-            transition: transform 0.3s;
-        }
-        .feature-item:hover {
-            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
         }
         .feature-icon {
             font-size: 3rem;
-            margin-bottom: 15px;
-        }
-        .feature-item h3 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.2rem;
-        }
-        .feature-item p {
-            color: #666;
-            font-size: 0.95rem;
-        }
-
-        /* 사용 방법 */
-        .steps {
-            counter-reset: step;
-        }
-        .step {
-            display: flex;
-            align-items: flex-start;
-            margin: 20px 0;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-        .step::before {
-            counter-increment: step;
-            content: counter(step);
-            background: #667eea;
-            color: white;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            margin-right: 20px;
             flex-shrink: 0;
         }
-        .step-content h3 {
+        .feature-text h3 {
+            font-size: 1.5rem;
             color: #333;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
-        .step-content p {
+        .feature-text p {
+            font-size: 1.2rem;
             color: #666;
+            line-height: 1.4;
         }
 
-        /* 지원 은행 */
-        .banks {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
-            gap: 15px;
-            margin: 20px 0;
+        /* 하단 링크 */
+        .footer-link {
+            position: fixed;
+            bottom: 20px;
+            right: 30px;
+            color: white;
+            opacity: 0.8;
+            font-size: 1rem;
         }
-        .bank-tag {
-            background: #e8f5e9;
-            color: #2e7d32;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.9rem;
-        }
-
-        /* FAQ */
-        .faq-item {
-            border-bottom: 1px solid #eee;
-            padding: 20px 0;
-        }
-        .faq-item:last-child {
-            border-bottom: none;
-        }
-        .faq-item h3 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
-        }
-        .faq-item p {
-            color: #666;
-        }
-
-        /* 푸터 */
-        footer {
-            text-align: center;
-            padding: 30px;
+        .footer-link a {
             color: white;
         }
-        footer a {
-            color: white;
-            text-decoration: underline;
-        }
 
-        /* 반응형 */
-        @media (max-width: 600px) {
-            .hero h1 {
-                font-size: 1.8rem;
+        /* 반응형 - 작은 화면 */
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto;
+                padding: 20px 30px;
+                gap: 20px;
+                overflow-y: auto;
             }
-            .hero .subtitle {
-                font-size: 1rem;
+            html, body {
+                overflow: auto;
             }
-            .card {
-                padding: 25px;
+            .left-section {
+                text-align: center;
             }
+            .app-title { font-size: 2.5rem; }
+            .app-subtitle { font-size: 1.3rem; margin-bottom: 20px; }
+            .download-btn {
+                font-size: 1.4rem;
+                padding: 20px 40px;
+                margin: 0 auto;
+            }
+            .feature-card { padding: 20px; }
+            .feature-icon { font-size: 2.5rem; }
+            .feature-text h3 { font-size: 1.3rem; }
+            .feature-text p { font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- 히어로 섹션 -->
-        <section class="hero">
-            <h1>띵동 입금알리미</h1>
-            <p class="subtitle">은행 입금 알림을 음성으로 바로 알려드립니다</p>
-            <a href="https://play.google.com/store/apps/details?id=com.family.bankvoicealert" class="download-btn" target="_blank" rel="noopener">
-                Google Play에서 무료 다운로드
-            </a>
-        </section>
-
-        <!-- 주요 기능 -->
-        <article class="card">
-            <h2>입금알리미 주요 기능</h2>
-            <div class="features">
-                <div class="feature-item">
-                    <div class="feature-icon">🔔</div>
-                    <h3>실시간 입금 알림</h3>
-                    <p>은행 앱 알림을 감지하여 입금 내역을 실시간으로 알려드립니다</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">🔊</div>
-                    <h3>TTS 음성 안내</h3>
-                    <p>입금 금액과 입금자명을 음성으로 읽어드립니다. 바쁜 매장에서도 편리하게!</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">🏦</div>
-                    <h3>모든 은행 지원</h3>
-                    <p>국민, 신한, 하나, 우리, 농협, 카카오뱅크, 토스뱅크 등 모든 은행 지원</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">💰</div>
-                    <h3>완전 무료</h3>
-                    <p>모든 기본 기능을 무료로 이용하실 수 있습니다</p>
-                </div>
-            </div>
-        </article>
-
-        <!-- 이런 분께 추천 -->
-        <article class="card">
-            <h2>이런 분께 추천합니다</h2>
-            <div class="features">
-                <div class="feature-item">
-                    <div class="feature-icon">🏪</div>
-                    <h3>매장 사장님</h3>
-                    <p>계산대에서 바로 입금 확인! 손님 응대하면서도 입금 내역을 놓치지 않습니다</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">📱</div>
-                    <h3>중고 거래자</h3>
-                    <p>계좌이체 입금을 음성으로 바로 확인하고 안전하게 거래하세요</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">👨‍💼</div>
-                    <h3>프리랜서</h3>
-                    <p>고객 입금을 실시간으로 확인하고 빠르게 대응하세요</p>
-                </div>
-                <div class="feature-item">
-                    <div class="feature-icon">👴</div>
-                    <h3>어르신</h3>
-                    <p>큰 글씨와 음성 안내로 어르신도 쉽게 사용할 수 있습니다</p>
-                </div>
-            </div>
-        </article>
-
-        <!-- 사용 방법 -->
-        <article class="card">
-            <h2>입금알리미 사용 방법</h2>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-content">
-                        <h3>앱 설치</h3>
-                        <p>Google Play 스토어에서 "띵동 입금알리미"를 검색하여 설치합니다</p>
-                    </div>
-                </div>
-                <div class="step">
-                    <div class="step-content">
-                        <h3>알림 권한 허용</h3>
-                        <p>앱 실행 후 알림 접근 권한을 허용해주세요</p>
-                    </div>
-                </div>
-                <div class="step">
-                    <div class="step-content">
-                        <h3>은행 앱 선택</h3>
-                        <p>사용하는 은행 앱을 선택하면 설정 완료!</p>
-                    </div>
-                </div>
-                <div class="step">
-                    <div class="step-content">
-                        <h3>입금 알림 받기</h3>
-                        <p>이제 입금이 들어오면 "띵동! OO님에게서 XX원 입금되었습니다" 음성 안내를 받으실 수 있습니다</p>
-                    </div>
-                </div>
-            </div>
-        </article>
-
-        <!-- 지원 은행 -->
-        <article class="card">
-            <h2>지원 은행</h2>
-            <p style="text-align: center; color: #666; margin-bottom: 20px;">국내 모든 주요 은행 앱을 지원합니다</p>
-            <div class="banks">
-                <span class="bank-tag">국민은행</span>
-                <span class="bank-tag">신한은행</span>
-                <span class="bank-tag">하나은행</span>
-                <span class="bank-tag">우리은행</span>
-                <span class="bank-tag">농협은행</span>
-                <span class="bank-tag">기업은행</span>
-                <span class="bank-tag">카카오뱅크</span>
-                <span class="bank-tag">토스뱅크</span>
-                <span class="bank-tag">케이뱅크</span>
-                <span class="bank-tag">SC제일은행</span>
-                <span class="bank-tag">씨티은행</span>
-                <span class="bank-tag">새마을금고</span>
-                <span class="bank-tag">신협</span>
-                <span class="bank-tag">수협</span>
-                <span class="bank-tag">우체국</span>
-                <span class="bank-tag">그 외 모든 은행</span>
-            </div>
-        </article>
-
-        <!-- FAQ -->
-        <article class="card">
-            <h2>자주 묻는 질문</h2>
-            <div class="faq-item">
-                <h3>Q. 입금알리미 앱은 무료인가요?</h3>
-                <p>A. 네, 띵동 입금알리미의 모든 기본 기능은 완전 무료입니다. 광고 제거를 원하시면 프리미엄 구독을 이용하실 수 있습니다.</p>
-            </div>
-            <div class="faq-item">
-                <h3>Q. 개인정보는 안전한가요?</h3>
-                <p>A. 모든 데이터는 사용자의 휴대폰에만 저장되며, 외부 서버로 전송되지 않습니다. 안심하고 사용하세요.</p>
-            </div>
-            <div class="faq-item">
-                <h3>Q. 배터리 소모가 많나요?</h3>
-                <p>A. 최적화된 알림 감지 방식으로 배터리 소모를 최소화했습니다. 일반적인 사용에서 배터리 영향은 거의 없습니다.</p>
-            </div>
-            <div class="faq-item">
-                <h3>Q. 모든 은행이 지원되나요?</h3>
-                <p>A. 네, 푸시 알림을 보내는 모든 은행 앱을 지원합니다. 사용하는 은행 앱의 입금 알림이 설정되어 있어야 합니다.</p>
-            </div>
-        </article>
-
-        <!-- 다운로드 CTA -->
-        <section class="hero" style="padding: 40px 20px;">
-            <h2 style="font-size: 1.8rem; margin-bottom: 20px;">지금 바로 입금알리미를 사용해보세요!</h2>
+        <!-- 왼쪽: 앱 소개 -->
+        <section class="left-section">
+            <h1 class="app-title">띵동 입금알리미</h1>
+            <p class="app-subtitle">
+                돈이 들어오면<br>
+                <strong>"띵동! 홍길동님 10만원 입금"</strong><br>
+                소리로 바로 알려드립니다
+            </p>
             <a href="https://play.google.com/store/apps/details?id=com.family.bankvoicealert" class="download-btn" target="_blank" rel="noopener">
                 무료 다운로드
             </a>
         </section>
 
-        <!-- 푸터 -->
-        <footer>
-            <p><a href="privacy.html">개인정보처리방침</a></p>
-            <p style="margin-top: 10px;">문의: tom00100218@gmail.com</p>
-            <p style="margin-top: 5px;">카카오톡: <a href="https://open.kakao.com/o/sxro90Th" target="_blank" rel="noopener">오픈채팅 문의</a></p>
-            <p style="margin-top: 20px; font-size: 0.9rem; opacity: 0.8;">Copyright © 2024-2025 띵동 입금알리미. All rights reserved.</p>
-        </footer>
+        <!-- 오른쪽: 기능 소개 -->
+        <section class="right-section">
+            <div class="feature-card">
+                <div class="feature-icon">🔊</div>
+                <div class="feature-text">
+                    <h3>음성으로 알려줍니다</h3>
+                    <p>입금 금액과 보낸 분 이름을 소리로 읽어드려요</p>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🏦</div>
+                <div class="feature-text">
+                    <h3>모든 은행 사용 가능</h3>
+                    <p>국민, 신한, 하나, 농협, 카카오뱅크 등 전부 됩니다</p>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">💰</div>
+                <div class="feature-text">
+                    <h3>완전 무료</h3>
+                    <p>돈 안 내고 평생 무료로 사용하세요</p>
+                </div>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <div class="feature-text">
+                    <h3>안전합니다</h3>
+                    <p>내 정보는 내 폰에만 저장, 어디로도 안 나갑니다</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="footer-link">
+        <a href="privacy.html">개인정보처리방침</a>
     </div>
 </body>
 </html>
