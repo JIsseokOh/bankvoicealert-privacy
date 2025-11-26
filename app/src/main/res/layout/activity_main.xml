@@ -235,7 +235,7 @@
         android:textStyle="bold"
         android:backgroundTint="#00ff88"
         android:textColor="#000000"
-        android:layout_marginTop="12dp"/>
+        android:layout_marginTop="6dp"/>
 
     <!-- 매출 집계 버튼 -->
     <Button
@@ -247,7 +247,7 @@
         android:textStyle="bold"
         android:backgroundTint="#4a90d9"
         android:textColor="#ffffff"
-        android:layout_marginTop="12dp"/>
+        android:layout_marginTop="6dp"/>
 
     <!-- 도움말 버튼 -->
     <Button
@@ -259,7 +259,7 @@
         android:textStyle="bold"
         android:backgroundTint="#666666"
         android:textColor="#ffffff"
-        android:layout_marginTop="12dp"/>
+        android:layout_marginTop="6dp"/>
 
     <!-- 문의 버튼 -->
     <Button
@@ -271,7 +271,7 @@
         android:textStyle="bold"
         android:backgroundTint="#666666"
         android:textColor="#ffffff"
-        android:layout_marginTop="12dp"/>
+        android:layout_marginTop="6dp"/>
 
 
 
