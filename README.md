@@ -4,7 +4,6 @@
 
 [![Play Store](https://img.shields.io/badge/Google%20Play-다운로드-green?style=flat-square&logo=google-play)](https://play.google.com/store/apps/details?id=com.family.bankvoicealert)
 ![Android](https://img.shields.io/badge/Android-5.0%2B-blue?style=flat-square&logo=android)
-![License](https://img.shields.io/badge/License-Private-red?style=flat-square)
 
 ---
 
@@ -111,7 +110,7 @@ app/src/main/java/com/family/bankvoicealert/
 
 ## 개인정보처리방침
 
-[개인정보처리방침 보기](https://jisseokoh.github.io/bankvoicealert-privacy/)
+[개인정보처리방침 보기](https://jisseokoh.github.io/bankvoicealert-privacy/privacy.html)
 
 ---
 
