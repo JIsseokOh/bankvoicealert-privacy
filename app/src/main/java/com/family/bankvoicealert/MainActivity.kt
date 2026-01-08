@@ -389,13 +389,13 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun updateBackgroundStatus(enabled: Boolean) {
-        // 버튼 상태에 따라 텍스트 변경
+        // 버튼 상태에 따라 텍스트 변경 (1번 앱카드와 동일한 스타일)
         if (enabled) {
-            backgroundText.text = "이제 나가면 끝!"
-            backgroundText.setTextColor(getColor(android.R.color.holo_green_light))
+            backgroundText.text = "2번 준비 끝!"
+            backgroundText.setTextColor(getColor(android.R.color.holo_green_dark))
         } else {
             backgroundText.text = "2번, 아래 버튼 누르기"
-            backgroundText.setTextColor(getColor(android.R.color.holo_green_light))
+            backgroundText.setTextColor(getColor(android.R.color.holo_red_dark))
         }
 
         // 스위치 상태만 변경
@@ -666,16 +666,10 @@ class MainActivity : AppCompatActivity() {
 
         dialog.show()
 
-        // 다이얼로그 배경 투명 설정 및 최대 높이 제한
+        // 다이얼로그 배경 투명 설정 및 화면 중앙 배치
         dialog.window?.let { window ->
             window.setBackgroundDrawableResource(android.R.color.transparent)
-            val displayMetrics = resources.displayMetrics
-            val maxHeight = (displayMetrics.heightPixels * 0.8).toInt()
-
-            window.attributes?.let { params ->
-                params.height = maxHeight
-                window.attributes = params
-            }
+            window.setGravity(Gravity.CENTER)
         }
     }
 
@@ -945,14 +939,14 @@ class MainActivity : AppCompatActivity() {
 
         dialog.show()
 
-        // 다이얼로그 크기 설정 (하단 광고 공간 확보)
+        // 다이얼로그 크기 설정 (상단 고정, 하단 광고 공간 확보)
         dialog.window?.let { window ->
             val displayMetrics = resources.displayMetrics
-            // 하단에 광고 배너 높이(약 60dp) + 여백 확보
-            val adBannerHeight = (70 * displayMetrics.density).toInt()
+            window.setGravity(Gravity.TOP)
+            window.setBackgroundDrawableResource(android.R.color.transparent)
             window.setLayout(
                 displayMetrics.widthPixels,
-                displayMetrics.heightPixels - adBannerHeight
+                android.view.WindowManager.LayoutParams.WRAP_CONTENT
             )
         }
     }
