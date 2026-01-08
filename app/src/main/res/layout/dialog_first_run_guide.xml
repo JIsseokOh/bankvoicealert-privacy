@@ -17,7 +17,7 @@
         android:text="1번 버튼 누르기"
         android:textSize="28sp"
         android:textStyle="bold"
-        android:textColor="#00ff88"
+        android:textColor="#ffffff"
         android:gravity="center"
         android:layout_marginBottom="16dp"/>
 
