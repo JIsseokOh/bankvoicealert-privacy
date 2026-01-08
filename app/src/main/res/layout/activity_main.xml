@@ -38,7 +38,7 @@
                 android:id="@+id/statusText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="비활성화"
+                android:text="1번, 아래 버튼 누르기"
                 android:textColor="#ff0000"
                 android:textSize="24sp"
                 android:textStyle="bold"
@@ -49,7 +49,6 @@
                 android:id="@+id/serviceSwitch"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="서비스 활성화"
                 android:textColor="#ffffff"
                 android:layout_gravity="center"
                 android:layout_marginTop="6dp"/>
@@ -189,7 +188,7 @@
                 android:id="@+id/backgroundText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="아래 스위치 키고 앱 나가면 끝!"
+                android:text="2번, 아래 버튼 누르기"
                 android:textColor="#00ff88"
                 android:textSize="22sp"
                 android:textStyle="bold"
@@ -202,15 +201,6 @@
                 android:layout_height="wrap_content"
                 android:textColor="#ffffff"
                 android:layout_gravity="center"
-                android:layout_marginTop="8dp"/>
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="💡 키면 앱을 나가도 알리미가 읽어줘요"
-                android:textColor="#b0b0b0"
-                android:textSize="16sp"
-                android:gravity="center"
                 android:layout_marginTop="8dp"/>
 
             <Button
@@ -245,8 +235,8 @@
         android:text="💰 매출 집계"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:backgroundTint="#4a90d9"
-        android:textColor="#ffffff"
+        android:backgroundTint="#ffaa00"
+        android:textColor="#000000"
         android:layout_marginTop="6dp"/>
 
     <!-- 도움말 버튼 -->
