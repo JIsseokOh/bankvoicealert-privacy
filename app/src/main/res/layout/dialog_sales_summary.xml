@@ -36,8 +36,8 @@
                 android:layout_height="40dp"
                 android:text="나가기"
                 android:textSize="14sp"
-                android:backgroundTint="#666666"
-                android:textColor="#ffffff"
+                android:backgroundTint="#ffaa00"
+                android:textColor="#000000"
                 android:paddingHorizontal="16dp"/>
         </LinearLayout>
 
@@ -245,16 +245,6 @@
                 android:orientation="vertical"/>
         </androidx.core.widget.NestedScrollView>
 
-        <!-- 닫기 버튼 -->
-        <Button
-            android:id="@+id/btnClose"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:text="닫기"
-            android:textSize="18sp"
-            android:backgroundTint="#666666"
-            android:textColor="#ffffff"
-            android:layout_marginTop="16dp"/>
 
     </LinearLayout>
 </ScrollView>

@@ -270,10 +270,10 @@ class MainActivity : AppCompatActivity() {
     
     private fun updateStatus(enabled: Boolean) {
         if (enabled) {
-            statusText.text = "활성화"
+            statusText.text = "1번 준비 끝!"
             statusText.setTextColor(getColor(android.R.color.holo_green_dark))
         } else {
-            statusText.text = "비활성화"
+            statusText.text = "1번, 아래 버튼 누르기"
             statusText.setTextColor(getColor(android.R.color.holo_red_dark))
         }
     }
@@ -389,12 +389,14 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun updateBackgroundStatus(enabled: Boolean) {
-        // 배터리 최적화 상태 확인
-        val isIgnoringBatteryOptimizations = isIgnoringBatteryOptimizations()
-
-        // 텍스트를 항상 동일하게 표시
-        backgroundText.text = "아래 스위치 키고 앱 나가면 끝!"
-        backgroundText.setTextColor(getColor(android.R.color.holo_green_light))
+        // 버튼 상태에 따라 텍스트 변경
+        if (enabled) {
+            backgroundText.text = "이제 나가면 끝!"
+            backgroundText.setTextColor(getColor(android.R.color.holo_green_light))
+        } else {
+            backgroundText.text = "2번, 아래 버튼 누르기"
+            backgroundText.setTextColor(getColor(android.R.color.holo_green_light))
+        }
 
         // 스위치 상태만 변경
         if (enabled != backgroundSwitch.isChecked) {
@@ -591,11 +593,11 @@ class MainActivity : AppCompatActivity() {
         if (prefs.contains("is_first_run")) {
             val isFirstRun = prefs.getBoolean("is_first_run", true)
             // is_first_run이 false면 사용자가 이미 가이드를 봤다는 의미
-            // 하지만 이번 업데이트에서는 가이드를 다시 보여주기 위해 dont_show_guide를 false로 설정
             prefs.edit().apply {
                 // 기존 설정 제거하고 새 설정으로 전환
                 remove("is_first_run")
-                putBoolean("dont_show_guide", false)  // 일단 모든 사용자에게 다시 표시
+                // 기존 사용자 설정 유지 (가이드를 다시 표시하지 않음)
+                putBoolean("dont_show_guide", !isFirstRun)
                 apply()
             }
         }
@@ -605,7 +607,16 @@ class MainActivity : AppCompatActivity() {
         // 사용자가 "다시 보지 않기"를 체크했는지 확인
         val dontShowAgain = prefs.getBoolean("dont_show_guide", false)
 
-        // "다시 보지 않기"를 체크하지 않았으면 항상 가이드 표시
+        // 이미 권한이 설정되어 있으면 가이드 표시하지 않음 (업데이트 후에도 권한 유지)
+        if (isNotificationServiceEnabled()) {
+            // 권한이 이미 설정되어 있으면 dont_show_guide를 true로 설정
+            if (!dontShowAgain) {
+                prefs.edit().putBoolean("dont_show_guide", true).apply()
+            }
+            return
+        }
+
+        // "다시 보지 않기"를 체크하지 않았으면 가이드 표시
         if (!dontShowAgain) {
             showFirstRunGuide()
         }
@@ -714,7 +725,6 @@ class MainActivity : AppCompatActivity() {
         val depositListContainer = dialogView.findViewById<LinearLayout>(R.id.depositListContainer)
         val tvDailyTotal = dialogView.findViewById<TextView>(R.id.tvDailyTotal)
         val tvMonthlyTotal = dialogView.findViewById<TextView>(R.id.tvMonthlyTotal)
-        val btnClose = dialogView.findViewById<Button>(R.id.btnClose)
         val btnBack = dialogView.findViewById<Button>(R.id.btnBack)
 
         val dialog = AlertDialog.Builder(this)
@@ -929,23 +939,20 @@ class MainActivity : AppCompatActivity() {
             dialog.dismiss()
         }
 
-        // 닫기 버튼
-        btnClose.setOnClickListener {
-            dialog.dismiss()
-        }
-
         // 초기화
         updateCalendar()
         updateDepositList()
 
         dialog.show()
 
-        // 다이얼로그를 전체화면으로 설정
+        // 다이얼로그 크기 설정 (하단 광고 공간 확보)
         dialog.window?.let { window ->
             val displayMetrics = resources.displayMetrics
+            // 하단에 광고 배너 높이(약 60dp) + 여백 확보
+            val adBannerHeight = (70 * displayMetrics.density).toInt()
             window.setLayout(
                 displayMetrics.widthPixels,
-                displayMetrics.heightPixels
+                displayMetrics.heightPixels - adBannerHeight
             )
         }
     }
