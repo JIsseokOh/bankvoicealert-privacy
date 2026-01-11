@@ -28,6 +28,7 @@ class ForegroundService : Service() {
         const val ACTION_START = "com.family.bankvoicealert.START_SERVICE"
         const val ACTION_STOP = "com.family.bankvoicealert.STOP_SERVICE"
         private const val SERVICE_DURATION_HOURS = 24L
+        private const val SERVICE_CHECK_INTERVAL_MINUTES = 15L
 
         fun startService(context: Context) {
             try {
@@ -96,12 +97,9 @@ class ForegroundService : Service() {
 
     private var isServiceStarted = false
     private var serviceStartTime = 0L
-    private var wakeLock: PowerManager.WakeLock? = null
 
     private var autoStopHandler: Handler? = null
     private var autoStopRunnable: Runnable? = null
-    private var wakeLockRenewalHandler: Handler? = null
-    private var wakeLockRenewalRunnable: Runnable? = null
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -132,7 +130,9 @@ class ForegroundService : Service() {
                 isServiceStarted = true
                 serviceStartTime = System.currentTimeMillis()
 
-                acquireWakeLock()
+                // Wake lock 제거: NotificationListenerService는 시스템이 관리하며,
+                // TTS 재생 시에만 TTSManager에서 wake lock을 사용합니다.
+                // 이를 통해 Android vitals의 "불필요한 부분적인 wake lock" 문제를 해결합니다.
                 scheduleAutoStop()
                 setupServiceProtection()
 
@@ -244,41 +244,6 @@ class ForegroundService : Service() {
         return builder.build()
     }
 
-    private fun acquireWakeLock() {
-        try {
-            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-            wakeLock = powerManager.newWakeLock(
-                PowerManager.PARTIAL_WAKE_LOCK,
-                "BankVoiceAlert::WakeLock"
-            ).apply {
-                acquire(TimeUnit.MINUTES.toMillis(20))
-            }
-            Log.d(TAG, "WakeLock acquired")
-            scheduleWakeLockRenewal()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to acquire WakeLock", e)
-        }
-    }
-
-    private fun scheduleWakeLockRenewal() {
-        wakeLockRenewalRunnable?.let { runnable ->
-            wakeLockRenewalHandler?.removeCallbacks(runnable)
-        }
-
-        wakeLockRenewalHandler = Handler(Looper.getMainLooper())
-        wakeLockRenewalRunnable = Runnable {
-            if (isServiceStarted) {
-                releaseWakeLock()
-                acquireWakeLock()
-            }
-        }
-
-        wakeLockRenewalHandler?.postDelayed(
-            wakeLockRenewalRunnable!!,
-            TimeUnit.MINUTES.toMillis(15)
-        )
-    }
-
     private fun scheduleAutoStop() {
         if (isIgnoringBatteryOptimizations()) {
             Log.d(TAG, "Battery optimization ignored - running in unlimited mode")
@@ -328,26 +293,11 @@ class ForegroundService : Service() {
         return powerManager.isIgnoringBatteryOptimizations(packageName)
     }
 
-    private fun releaseWakeLock() {
-        try {
-            wakeLock?.let {
-                if (it.isHeld) {
-                    it.release()
-                    Log.d(TAG, "WakeLock released")
-                }
-            }
-            wakeLock = null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error releasing WakeLock", e)
-        }
-    }
-
     private fun stopServiceGracefully() {
         Log.d(TAG, "Stopping service gracefully")
         try {
             isServiceStarted = false
             cancelAllHandlers()
-            releaseWakeLock()
 
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -384,12 +334,6 @@ class ForegroundService : Service() {
             }
             autoStopRunnable = null
             autoStopHandler = null
-
-            wakeLockRenewalRunnable?.let { runnable ->
-                wakeLockRenewalHandler?.removeCallbacks(runnable)
-            }
-            wakeLockRenewalRunnable = null
-            wakeLockRenewalHandler = null
         } catch (e: Exception) {
             Log.e(TAG, "Error cancelling handlers", e)
         }
@@ -402,7 +346,6 @@ class ForegroundService : Service() {
         try {
             isServiceStarted = false
             cancelAllHandlers()
-            releaseWakeLock()
             cancelServiceProtection()
 
             try {
@@ -445,24 +388,28 @@ class ForegroundService : Service() {
                     PendingIntent.FLAG_UPDATE_CURRENT
             )
 
-            val intervalMillis = TimeUnit.MINUTES.toMillis(5)
+            val intervalMillis = TimeUnit.MINUTES.toMillis(SERVICE_CHECK_INTERVAL_MINUTES)
             val triggerTime = SystemClock.elapsedRealtime() + intervalMillis
 
+            // ELAPSED_REALTIME (비-WAKEUP) 사용: 기기를 깨우지 않고 다음 깨어날 때 실행
+            // 이를 통해 불필요한 wake lock 발생을 방지합니다.
+            // NotificationListenerService는 시스템이 알림 도착 시 자동으로 깨우므로
+            // 별도의 WAKEUP 알람이 필요하지 않습니다.
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                alarmManager.setExactAndAllowWhileIdle(
-                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                alarmManager.setAndAllowWhileIdle(
+                    AlarmManager.ELAPSED_REALTIME,
                     triggerTime,
                     pendingIntent
                 )
             } else {
                 alarmManager.setRepeating(
-                    AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    AlarmManager.ELAPSED_REALTIME,
                     triggerTime,
                     intervalMillis,
                     pendingIntent
                 )
             }
-            Log.d(TAG, "Service protection alarm set (5 minutes interval)")
+            Log.d(TAG, "Service protection alarm set (${SERVICE_CHECK_INTERVAL_MINUTES} minutes interval, non-wakeup)")
         } catch (e: Exception) {
             Log.e(TAG, "Failed to setup service protection", e)
         }
