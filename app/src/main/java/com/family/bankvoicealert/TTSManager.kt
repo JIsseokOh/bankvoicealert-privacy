@@ -6,7 +6,6 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
-import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.speech.tts.TextToSpeech
@@ -63,12 +62,10 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private val context: Context = context
     private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val vibrator: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-    private val powerManager: PowerManager = context.getSystemService(Context.POWER_SERVICE) as PowerManager
     private val speechQueue = ConcurrentLinkedQueue<SpeechItem>()
 
     private var tts: TextToSpeech? = null
     private var audioFocusRequest: Any? = null
-    private var ttsWakeLock: PowerManager.WakeLock? = null
     private var isInitialized = false
     private var isSpeaking = false
 
@@ -141,7 +138,6 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
                 Log.d(TAG, "TTS completed: $utteranceId")
                 restoreVolume()
                 releaseAudioFocus()
-                releaseTTSWakeLock()
                 isSpeaking = false
                 processNextInQueue()
             }
@@ -150,7 +146,6 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
                 Log.e(TAG, "TTS error: $utteranceId")
                 restoreVolume()
                 releaseAudioFocus()
-                releaseTTSWakeLock()
                 isSpeaking = false
                 processNextInQueue()
             }
@@ -210,8 +205,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     }
 
     private fun speakNow(item: SpeechItem) {
-        // TTS 재생 중에만 wake lock 획득 (오디오 재생 중의 wake lock은 Android vitals에서 제외)
-        acquireTTSWakeLock()
+        // 포그라운드 서비스(foregroundServiceType="mediaPlayback")가 이미 CPU를 유지하므로
+        // 별도의 wake lock이 필요하지 않습니다. TTS 엔진도 오디오 재생 중 CPU를 유지합니다.
 
         // 약간의 피치 변화를 주어 자연스러운 음성 생성
         val randomPitch = 0.8f + (Random.nextFloat() * 0.2f)
@@ -231,38 +226,6 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         vibrateWithIntensity(item.volumePercent)
 
         Log.d(TAG, "Speaking now: ${item.message} (rate: ${item.speechRate}, pitch: $randomPitch, volume: ${item.volumePercent}%)")
-    }
-
-    private fun acquireTTSWakeLock() {
-        try {
-            // 이미 wake lock을 가지고 있으면 해제 후 새로 획득
-            releaseTTSWakeLock()
-
-            ttsWakeLock = powerManager.newWakeLock(
-                PowerManager.PARTIAL_WAKE_LOCK,
-                "BankVoiceAlert::TTSWakeLock"
-            ).apply {
-                // 최대 30초 타임아웃 (TTS 재생이 그보다 오래 걸리지 않음)
-                acquire(30_000L)
-            }
-            Log.d(TAG, "TTS WakeLock acquired")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to acquire TTS WakeLock", e)
-        }
-    }
-
-    private fun releaseTTSWakeLock() {
-        try {
-            ttsWakeLock?.let {
-                if (it.isHeld) {
-                    it.release()
-                    Log.d(TAG, "TTS WakeLock released")
-                }
-            }
-            ttsWakeLock = null
-        } catch (e: Exception) {
-            Log.e(TAG, "Error releasing TTS WakeLock", e)
-        }
     }
 
     private fun convertBankName(bank: String): String {
@@ -397,7 +360,6 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
     fun shutdown() {
         releaseAudioFocus()
-        releaseTTSWakeLock()
         tts?.stop()
         tts?.shutdown()
         isInitialized = false
