@@ -1,7 +1,7 @@
 {
-  "latestVersionCode": 69,
-  "latestVersionName": "1.3.38",
-  "minimumVersionCode": 69,
+  "latestVersionCode": 70,
+  "latestVersionName": "1.3.39",
+  "minimumVersionCode": 70,
   "updateMessage": "새로운 업데이트가 있습니다.\n\n주요 업데이트:\n- 변경된 구글 정책 적용\n- 배터리 사용량 개선\n\n업데이트를 권장합니다.",
   "playStoreUrl": "https://play.google.com/store/apps/details?id=com.family.bankvoicealert"
 }
