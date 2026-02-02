@@ -239,6 +239,18 @@
         android:textColor="#000000"
         android:layout_marginTop="6dp"/>
 
+    <!-- 팝업 알림 토글 버튼 -->
+    <Button
+        android:id="@+id/popupToggleButton"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="팝업 알림 켜짐"
+        android:textSize="20sp"
+        android:textStyle="bold"
+        android:backgroundTint="#00cc66"
+        android:textColor="#000000"
+        android:layout_marginTop="6dp"/>
+
     <!-- 도움말 버튼 -->
     <Button
         android:id="@+id/helpButton"

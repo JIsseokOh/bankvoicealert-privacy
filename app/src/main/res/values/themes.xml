@@ -15,4 +15,14 @@
         <!-- Customize your theme here -->
         <item name="android:windowBackground">#1a1a1a</item>
     </style>
+
+    <!-- Deposit alert overlay theme -->
+    <style name="Theme.DepositAlert" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">true</item>
+        <item name="android:backgroundDimAmount">0.3</item>
+        <item name="android:windowAnimationStyle">@android:style/Animation.Toast</item>
+    </style>
 </resources>
