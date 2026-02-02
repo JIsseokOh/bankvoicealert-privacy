@@ -1,13 +1,18 @@
 package com.family.bankvoicealert
 
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import java.text.NumberFormat
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
@@ -16,6 +21,7 @@ class BankNotificationService : NotificationListenerService() {
     companion object {
         private const val TAG = "BankNotificationService"
         private val VERSION_CHECK_INTERVAL = TimeUnit.HOURS.toMillis(1) // 1시간마다 체크
+        private const val DEPOSIT_CHANNEL_ID = "deposit_alert"
     }
 
     private lateinit var ttsManager: TTSManager
@@ -32,6 +38,7 @@ class BankNotificationService : NotificationListenerService() {
         depositDataManager = DepositDataManager.getInstance(this)
         updateChecker = UpdateChecker(this)
         isServiceActive = true
+        createDepositNotificationChannel()
         Log.d(TAG, "Service created")
 
         // 주기적 버전 체크 시작
@@ -119,6 +126,11 @@ class BankNotificationService : NotificationListenerService() {
                     // 업데이트 필요 여부 확인
                     val updateMessage = getUpdateTTSMessage()
 
+                    // 화면 푸쉬 알림 표시 (설정이 켜져 있을 때만)
+                    if (isPopupAlertEnabled()) {
+                        showDepositNotification(amount)
+                    }
+
                     // 음성 알림 (업데이트 필요 시 메시지 추가)
                     ttsManager.speakSimple("입금확인", amount, updateMessage)
                 } else {
@@ -184,6 +196,47 @@ class BankNotificationService : NotificationListenerService() {
         return "알수없음"
     }
 
+    private fun createDepositNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                DEPOSIT_CHANNEL_ID,
+                "입금 알림",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "입금 감지 시 화면에 알림을 표시합니다"
+                setShowBadge(true)
+                enableLights(true)
+                enableVibration(false) // 진동은 TTS쪽에서 처리
+                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                setSound(null, null) // 소리는 TTS에서 처리
+            }
+            val notificationManager = getSystemService(NotificationManager::class.java)
+            notificationManager?.createNotificationChannel(channel)
+        }
+    }
+
+    private fun showDepositNotification(amount: String) {
+        try {
+            val formattedAmount = try {
+                val numberFormat = NumberFormat.getNumberInstance(Locale.KOREA)
+                numberFormat.format(amount.toLong()) + "원"
+            } catch (e: Exception) {
+                "${amount}원"
+            }
+
+            // Launch overlay activity with deposit info + banner ad
+            val intent = Intent(this, DepositAlertActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra(DepositAlertActivity.EXTRA_AMOUNT, formattedAmount)
+            }
+            startActivity(intent)
+
+            Log.d(TAG, "입금 알림 표시: $formattedAmount")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error showing deposit notification", e)
+        }
+    }
+
     private fun isBlockedApp(packageName: String): Boolean {
         // 메신저 앱 등 차단 목록
         val blockedApps = listOf(
@@ -202,6 +255,11 @@ class BankNotificationService : NotificationListenerService() {
             "com.bbm"                   // BBM
         )
         return blockedApps.contains(packageName)
+    }
+
+    private fun isPopupAlertEnabled(): Boolean {
+        val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
+        return prefs.getBoolean("popup_alert_enabled", true)
     }
 
     private fun isBackgroundEnabled(): Boolean {

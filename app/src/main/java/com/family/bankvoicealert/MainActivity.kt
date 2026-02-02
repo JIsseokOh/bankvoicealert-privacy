@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var backgroundText: TextView
     private lateinit var batteryOptimizationButton: Button
     private lateinit var salesSummaryButton: Button
+    private lateinit var popupToggleButton: Button
     private lateinit var depositDataManager: DepositDataManager
 
     override fun attachBaseContext(newBase: Context) {
@@ -122,6 +123,7 @@ class MainActivity : AppCompatActivity() {
         backgroundText = findViewById(R.id.backgroundText)
         batteryOptimizationButton = findViewById(R.id.batteryOptimizationButton)
         salesSummaryButton = findViewById(R.id.salesSummaryButton)
+        popupToggleButton = findViewById(R.id.popupToggleButton)
     }
     
     private fun loadSettings() {
@@ -143,6 +145,9 @@ class MainActivity : AppCompatActivity() {
 
         // 배터리 최적화 상태에 따라 버튼 텍스트 업데이트
         updateBatteryOptimizationButton()
+
+        // 팝업 알림 상태 로드
+        updatePopupToggleButton(prefs.getBoolean("popup_alert_enabled", true))
     }
     
     private fun setupListeners() {
@@ -189,6 +194,13 @@ class MainActivity : AppCompatActivity() {
 
         salesSummaryButton.setOnClickListener {
             showSalesSummaryDialog()
+        }
+
+        popupToggleButton.setOnClickListener {
+            val current = prefs.getBoolean("popup_alert_enabled", true)
+            val newState = !current
+            prefs.edit().putBoolean("popup_alert_enabled", newState).apply()
+            updatePopupToggleButton(newState)
         }
 
         helpButton.setOnClickListener {
@@ -281,7 +293,14 @@ class MainActivity : AppCompatActivity() {
     private fun testVoiceAlert() {
         // 고정값: 입금확인 1만원
         ttsManager.speakDeposit("테스트", "10000")
-        Toast.makeText(this, "입금확인 1만원 테스트 재생", Toast.LENGTH_SHORT).show()
+
+        // 팝업 알림이 켜져 있을 때만 표시
+        if (prefs.getBoolean("popup_alert_enabled", true)) {
+            val intent = Intent(this, DepositAlertActivity::class.java).apply {
+                putExtra(DepositAlertActivity.EXTRA_AMOUNT, "10,000원")
+            }
+            startActivity(intent)
+        }
     }
     
     override fun onResume() {
@@ -401,6 +420,20 @@ class MainActivity : AppCompatActivity() {
         // 스위치 상태만 변경
         if (enabled != backgroundSwitch.isChecked) {
             backgroundSwitch.isChecked = enabled
+        }
+    }
+
+    private fun updatePopupToggleButton(enabled: Boolean) {
+        if (enabled) {
+            popupToggleButton.text = "팝업 알림 켜짐"
+            popupToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(this, android.R.color.holo_green_dark)
+            )
+        } else {
+            popupToggleButton.text = "팝업 알림 꺼짐"
+            popupToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(this, android.R.color.holo_red_dark)
+            )
         }
     }
 
