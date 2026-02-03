@@ -45,11 +45,15 @@
                 android:gravity="center"
                 android:padding="6dp"/>
 
-            <Switch
-                android:id="@+id/serviceSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#ffffff"
+            <Button
+                android:id="@+id/serviceToggleButton"
+                android:layout_width="220dp"
+                android:layout_height="52dp"
+                android:text="알림 감지 시작"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#000000"
+                android:backgroundTint="#00ff88"
                 android:layout_gravity="center"
                 android:layout_marginTop="6dp"/>
 
@@ -195,11 +199,15 @@
                 android:gravity="center"
                 android:padding="6dp"/>
 
-            <Switch
-                android:id="@+id/backgroundSwitch"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:textColor="#ffffff"
+            <Button
+                android:id="@+id/backgroundToggleButton"
+                android:layout_width="220dp"
+                android:layout_height="52dp"
+                android:text="백그라운드 실행"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#000000"
+                android:backgroundTint="#00ff88"
                 android:layout_gravity="center"
                 android:layout_marginTop="8dp"/>
 
