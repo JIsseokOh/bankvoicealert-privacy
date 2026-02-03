@@ -115,6 +115,9 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isIgnoringBatteryOptimizations()) {
             requestBatteryOptimizationExemption()
         }
+
+        // 다른 앱 위에 표시 권한 확인 (백그라운드 팝업 알림에 필요)
+        requestOverlayPermission()
     }
     
     private fun initViews() {
@@ -565,6 +568,23 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
             }
+        }
+    }
+
+    private fun requestOverlayPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            AlertDialog.Builder(this)
+                .setTitle("팝업 알림 권한 필요")
+                .setMessage("백그라운드에서 입금 팝업 알림을 표시하려면\n'다른 앱 위에 표시' 권한이 필요합니다.")
+                .setPositiveButton("설정으로 이동") { _, _ ->
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    )
+                    startActivity(intent)
+                }
+                .setNegativeButton("나중에", null)
+                .show()
         }
     }
 

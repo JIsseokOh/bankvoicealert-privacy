@@ -3,6 +3,7 @@ package com.family.bankvoicealert
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -224,16 +225,15 @@ class BankNotificationService : NotificationListenerService() {
                 "${amount}원"
             }
 
-            // Launch overlay activity with deposit info + banner ad
             val intent = Intent(this, DepositAlertActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or
                         Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 putExtra(DepositAlertActivity.EXTRA_AMOUNT, formattedAmount)
             }
-            startActivity(intent)
 
-            Log.d(TAG, "입금 알림 표시: $formattedAmount")
+            startActivity(intent)
+            Log.d(TAG, "입금 팝업 직접 실행: $formattedAmount")
         } catch (e: Exception) {
             Log.e(TAG, "Error showing deposit notification", e)
         }
