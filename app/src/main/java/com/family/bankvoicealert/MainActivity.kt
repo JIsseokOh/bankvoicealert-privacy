@@ -90,7 +90,14 @@ class MainActivity : AppCompatActivity() {
         val adContainer = findViewById<LinearLayout>(R.id.adContainer)
         adManager.loadBannerAd(adContainer)
         requestSmsPermission()
-        requestNotificationPermission()
+        // 알림 권한은 SMS 권한 결과 후 체이닝하여 요청 (동시 요청 시 무시되는 문제 방지)
+        // SMS 권한이 이미 허용된 경우 바로 알림 권한 요청
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
+            == PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+            == PackageManager.PERMISSION_GRANTED) {
+            requestNotificationPermission()
+        }
 
         // 뒤로가기 버튼 처리
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -507,14 +514,47 @@ class MainActivity : AppCompatActivity() {
     
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) 
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                    this,
-                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
-                    101
-                )
+                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.POST_NOTIFICATIONS)) {
+                    // 이전에 거부한 적 있음 - 설명 후 다시 요청
+                    AlertDialog.Builder(this)
+                        .setTitle("알림 권한 필요")
+                        .setMessage("입금 알림을 받으려면 알림 권한이 필요합니다.\n권한을 허용해 주세요.")
+                        .setPositiveButton("허용") { _, _ ->
+                            ActivityCompat.requestPermissions(
+                                this,
+                                arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                                101
+                            )
+                        }
+                        .setNegativeButton("취소", null)
+                        .show()
+                } else {
+                    // 처음 요청 또는 "다시 묻지 않기" 선택됨
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                        101
+                    )
+                }
             }
+        }
+    }
+
+    private fun showNotificationPermissionGuide() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            AlertDialog.Builder(this)
+                .setTitle("알림 권한이 필요합니다")
+                .setMessage("입금 감지 시 알림 팝업을 표시하려면 알림 권한이 필요합니다.\n\n설정에서 알림 권한을 허용해 주세요.")
+                .setPositiveButton("설정으로 이동") { _, _ ->
+                    val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                        putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                    }
+                    startActivity(intent)
+                }
+                .setNegativeButton("나중에", null)
+                .show()
         }
     }
     
@@ -529,10 +569,15 @@ class MainActivity : AppCompatActivity() {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, "SMS 권한 허용됨", Toast.LENGTH_SHORT).show()
                 }
+                // SMS 권한 처리 후 알림 권한 요청
+                requestNotificationPermission()
             }
             101 -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, "알림 권한 허용됨", Toast.LENGTH_SHORT).show()
+                } else {
+                    // 권한 거부 시 설정으로 안내
+                    showNotificationPermissionGuide()
                 }
             }
         }
