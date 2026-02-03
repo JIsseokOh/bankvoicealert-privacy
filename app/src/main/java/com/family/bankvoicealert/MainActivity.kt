@@ -296,7 +296,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateStatus(enabled: Boolean) {
         if (enabled) {
             statusText.text = "1번 준비 끝!"
-            statusText.setTextColor(getColor(android.R.color.holo_green_dark))
+            statusText.setTextColor(android.graphics.Color.parseColor("#00ff88"))
         } else {
             statusText.text = "1번, 아래 버튼 누르기"
             statusText.setTextColor(getColor(android.R.color.holo_red_dark))
@@ -424,7 +424,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateBackgroundStatus(enabled: Boolean) {
         if (enabled) {
             backgroundText.text = "2번 준비 끝!"
-            backgroundText.setTextColor(getColor(android.R.color.holo_green_dark))
+            backgroundText.setTextColor(android.graphics.Color.parseColor("#00ff88"))
         } else {
             backgroundText.text = "2번, 아래 버튼 누르기"
             backgroundText.setTextColor(getColor(android.R.color.holo_red_dark))
@@ -435,7 +435,7 @@ class MainActivity : AppCompatActivity() {
         if (serviceEnabled) {
             serviceToggleButton.text = "알림 감지 활성화됨"
             serviceToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                ContextCompat.getColor(this, android.R.color.holo_green_dark)
+                android.graphics.Color.parseColor("#00ff88")
             )
         } else {
             serviceToggleButton.text = "알림 감지 시작"
@@ -449,7 +449,7 @@ class MainActivity : AppCompatActivity() {
         if (backgroundEnabled) {
             backgroundToggleButton.text = "백그라운드 실행 중"
             backgroundToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                ContextCompat.getColor(this, android.R.color.holo_green_dark)
+                android.graphics.Color.parseColor("#00ff88")
             )
         } else {
             backgroundToggleButton.text = "백그라운드 실행"
