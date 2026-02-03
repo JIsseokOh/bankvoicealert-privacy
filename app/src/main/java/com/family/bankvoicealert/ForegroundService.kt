@@ -188,13 +188,13 @@ class ForegroundService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "띵동 입금알리미 서비스",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_MIN
             ).apply {
                 description = "백그라운드에서 은행 입금 알림을 감지합니다"
                 setShowBadge(false)
                 enableLights(false)
                 enableVibration(false)
-                lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+                lockscreenVisibility = Notification.VISIBILITY_SECRET
                 setSound(null, null)
             }
 
@@ -231,7 +231,7 @@ class ForegroundService : Service() {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .setSilent(true)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
