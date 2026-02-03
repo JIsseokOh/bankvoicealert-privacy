@@ -226,7 +226,9 @@ class BankNotificationService : NotificationListenerService() {
 
             // Launch overlay activity with deposit info + banner ad
             val intent = Intent(this, DepositAlertActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                        Intent.FLAG_ACTIVITY_CLEAR_TOP or
+                        Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
                 putExtra(DepositAlertActivity.EXTRA_AMOUNT, formattedAmount)
             }
             startActivity(intent)
