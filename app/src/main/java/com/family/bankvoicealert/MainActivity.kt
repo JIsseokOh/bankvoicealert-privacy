@@ -44,12 +44,14 @@ class MainActivity : AppCompatActivity() {
     private lateinit var speedSeekBar: SeekBar
     private lateinit var speedText: TextView
     private lateinit var statusText: TextView
-    private lateinit var serviceSwitch: Switch
+    private lateinit var serviceToggleButton: Button
+    private var serviceEnabled = false
     private lateinit var testButton: Button
     private lateinit var helpButton: Button
     private lateinit var supportButton: Button
     private lateinit var permissionButton: Button
-    private lateinit var backgroundSwitch: Switch
+    private lateinit var backgroundToggleButton: Button
+    private var backgroundEnabled = false
     private lateinit var backgroundText: TextView
     private lateinit var batteryOptimizationButton: Button
     private lateinit var salesSummaryButton: Button
@@ -121,12 +123,12 @@ class MainActivity : AppCompatActivity() {
         speedSeekBar = findViewById(R.id.speedSeekBar)
         speedText = findViewById(R.id.speedText)
         statusText = findViewById(R.id.statusText)
-        serviceSwitch = findViewById(R.id.serviceSwitch)
+        serviceToggleButton = findViewById(R.id.serviceToggleButton)
         testButton = findViewById(R.id.testButton)
         helpButton = findViewById(R.id.helpButton)
         supportButton = findViewById(R.id.supportButton)
         permissionButton = findViewById(R.id.permissionButton)
-        backgroundSwitch = findViewById(R.id.backgroundSwitch)
+        backgroundToggleButton = findViewById(R.id.backgroundToggleButton)
         backgroundText = findViewById(R.id.backgroundText)
         batteryOptimizationButton = findViewById(R.id.batteryOptimizationButton)
         salesSummaryButton = findViewById(R.id.salesSummaryButton)
@@ -143,11 +145,12 @@ class MainActivity : AppCompatActivity() {
         speedSeekBar.progress = ((speed - 0.5f) * 20).toInt()
         speedText.text = "${String.format("%.1f", speed)}x"
         
-        serviceSwitch.isChecked = isNotificationServiceEnabled()
-        
+        serviceEnabled = isNotificationServiceEnabled()
+        updateServiceToggleButton()
+
         // 백그라운드 실행 상태 로드
-        val backgroundEnabled = prefs.getBoolean("background_enabled", false)
-        backgroundSwitch.isChecked = backgroundEnabled
+        backgroundEnabled = prefs.getBoolean("background_enabled", false)
+        updateBackgroundToggleButton()
         updateBackgroundStatus(backgroundEnabled)
 
         // 배터리 최적화 상태에 따라 버튼 텍스트 업데이트
@@ -180,18 +183,19 @@ class MainActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {}
         })
         
-        serviceSwitch.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                if (!isNotificationServiceEnabled()) {
-                    requestNotificationAccess()
-                    serviceSwitch.isChecked = false
-                } else {
-                    // 서비스가 활성화되어 있으면 상태 업데이트
-                    updateStatus(true)
-                }
+        serviceToggleButton.setOnClickListener {
+            if (!isNotificationServiceEnabled()) {
+                requestNotificationAccess()
             } else {
-                // 팝업 없이 바로 비활성화
-                updateStatus(false)
+                // 활성화 상태에서 클릭 시 설정으로 이동하여 비활성화 가능
+                AlertDialog.Builder(this)
+                    .setTitle("알림 감지 중지")
+                    .setMessage("알림 감지를 중지하려면 설정에서 권한을 해제해 주세요.")
+                    .setPositiveButton("설정으로 이동") { _, _ ->
+                        openNotificationSettings()
+                    }
+                    .setNegativeButton("취소", null)
+                    .show()
             }
         }
         
@@ -229,12 +233,12 @@ class MainActivity : AppCompatActivity() {
             openNotificationSettings()
         }
         
-        // 백그라운드 실행 스위치
-        backgroundSwitch.setOnCheckedChangeListener { _, isChecked ->
-            if (isChecked) {
-                startBackgroundService()
-            } else {
+        // 백그라운드 실행 버튼
+        backgroundToggleButton.setOnClickListener {
+            if (backgroundEnabled) {
                 stopBackgroundService()
+            } else {
+                startBackgroundService()
             }
         }
 
@@ -246,8 +250,9 @@ class MainActivity : AppCompatActivity() {
     
     private fun checkPermissions() {
         val isEnabled = isNotificationServiceEnabled()
+        serviceEnabled = isEnabled
         updateStatus(isEnabled)
-        serviceSwitch.isChecked = isEnabled
+        updateServiceToggleButton()
     }
     
     private fun isNotificationServiceEnabled(): Boolean {
@@ -277,13 +282,11 @@ class MainActivity : AppCompatActivity() {
             .setTitle("서비스 중지")
             .setMessage("알림 감지 서비스를 중지하시겠습니까?")
             .setPositiveButton("중지") { _, _ ->
-                // 서비스는 시스템이 관리하므로 스위치 상태만 변경
-                serviceSwitch.isChecked = false
+                serviceEnabled = false
                 updateStatus(false)
+                updateServiceToggleButton()
             }
-            .setNegativeButton("취소") { _, _ ->
-                serviceSwitch.isChecked = true
-            }
+            .setNegativeButton("취소", null)
             .show()
     }
     
@@ -317,7 +320,7 @@ class MainActivity : AppCompatActivity() {
 
         // 배터리 최적화 상태 업데이트
         updateBatteryOptimizationButton()
-        updateBackgroundStatus(backgroundSwitch.isChecked)
+        updateBackgroundStatus(backgroundEnabled)
 
         // 백그라운드 서비스 상태는 약간의 지연 후 확인
         // 이렇게 하면 앱이 완전히 포그라운드로 전환된 후에 서비스를 시작
@@ -334,43 +337,41 @@ class MainActivity : AppCompatActivity() {
 
             // 저장된 설정이 true인데 서비스가 실행 중이지 않으면 서비스 시작
             if (savedState && !isRunning) {
-                // Android 12 이상에서는 백그라운드에서 포그라운드 서비스 시작 제한이 있음
-                // 앱이 포그라운드에 있을 때만 서비스 시작 시도
                 try {
-                    // 서비스를 시작하되, 실패하면 설정을 false로 변경
                     ForegroundService.startService(this)
-                    backgroundSwitch.isChecked = true
+                    backgroundEnabled = true
+                    updateBackgroundToggleButton()
                     updateBackgroundStatus(true)
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Failed to start background service", e)
-                    // 서비스 시작 실패 시 설정을 비활성화
                     prefs.edit().putBoolean("background_enabled", false).apply()
-                    backgroundSwitch.isChecked = false
+                    backgroundEnabled = false
+                    updateBackgroundToggleButton()
                     updateBackgroundStatus(false)
 
-                    // 사용자에게 수동으로 활성화하도록 안내
                     Toast.makeText(this,
                         "백그라운드 서비스 시작 실패. 앱이 열린 상태에서 다시 활성화해 주세요.",
                         Toast.LENGTH_LONG).show()
                 }
             } else if (!savedState && isRunning) {
-                // 설정은 false인데 서비스가 실행 중이면 서비스 중지
                 try {
                     ForegroundService.stopService(this)
                 } catch (e: Exception) {
                     Log.e("MainActivity", "Failed to stop service", e)
                 }
-                backgroundSwitch.isChecked = false
+                backgroundEnabled = false
+                updateBackgroundToggleButton()
                 updateBackgroundStatus(false)
             } else {
-                // 상태가 일치하면 UI만 업데이트
-                backgroundSwitch.isChecked = savedState
+                backgroundEnabled = savedState
+                updateBackgroundToggleButton()
                 updateBackgroundStatus(savedState)
             }
         } catch (e: Exception) {
             Log.e("MainActivity", "Error checking background service status", e)
             // 오류 발생 시 안전하게 설정을 비활성화
-            backgroundSwitch.isChecked = false
+            backgroundEnabled = false
+            updateBackgroundToggleButton()
             updateBackgroundStatus(false)
         }
     }
@@ -388,9 +389,10 @@ class MainActivity : AppCompatActivity() {
     // Removed loadDebugLog function
     
     private fun startBackgroundService() {
-        // 백그라운드 서비스 시작 (모든 Android 버전에서 허용)
         ForegroundService.startService(this)
         prefs.edit().putBoolean("background_enabled", true).apply()
+        backgroundEnabled = true
+        updateBackgroundToggleButton()
         updateBackgroundStatus(true)
         Toast.makeText(this, "백그라운드 실행 활성화", Toast.LENGTH_SHORT).show()
     }
@@ -399,23 +401,24 @@ class MainActivity : AppCompatActivity() {
         try {
             ForegroundService.stopService(this)
 
-            // 상태 업데이트를 약간 지연
             Handler(Looper.getMainLooper()).postDelayed({
                 prefs.edit().putBoolean("background_enabled", false).apply()
+                backgroundEnabled = false
+                updateBackgroundToggleButton()
                 updateBackgroundStatus(false)
                 Toast.makeText(this, "백그라운드 실행 중지", Toast.LENGTH_SHORT).show()
             }, 100)
         } catch (e: Exception) {
             Log.e("MainActivity", "Error stopping service", e)
-            // 오류가 발생해도 UI 상태는 업데이트
             prefs.edit().putBoolean("background_enabled", false).apply()
+            backgroundEnabled = false
+            updateBackgroundToggleButton()
             updateBackgroundStatus(false)
             Toast.makeText(this, "백그라운드 실행 중지", Toast.LENGTH_SHORT).show()
         }
     }
     
     private fun updateBackgroundStatus(enabled: Boolean) {
-        // 버튼 상태에 따라 텍스트 변경 (1번 앱카드와 동일한 스타일)
         if (enabled) {
             backgroundText.text = "2번 준비 끝!"
             backgroundText.setTextColor(getColor(android.R.color.holo_green_dark))
@@ -423,10 +426,33 @@ class MainActivity : AppCompatActivity() {
             backgroundText.text = "2번, 아래 버튼 누르기"
             backgroundText.setTextColor(getColor(android.R.color.holo_red_dark))
         }
+    }
 
-        // 스위치 상태만 변경
-        if (enabled != backgroundSwitch.isChecked) {
-            backgroundSwitch.isChecked = enabled
+    private fun updateServiceToggleButton() {
+        if (serviceEnabled) {
+            serviceToggleButton.text = "알림 감지 활성화됨"
+            serviceToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(this, android.R.color.holo_green_dark)
+            )
+        } else {
+            serviceToggleButton.text = "알림 감지 시작"
+            serviceToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                android.graphics.Color.parseColor("#00ff88")
+            )
+        }
+    }
+
+    private fun updateBackgroundToggleButton() {
+        if (backgroundEnabled) {
+            backgroundToggleButton.text = "백그라운드 실행 중"
+            backgroundToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                ContextCompat.getColor(this, android.R.color.holo_green_dark)
+            )
+        } else {
+            backgroundToggleButton.text = "백그라운드 실행"
+            backgroundToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
+                android.graphics.Color.parseColor("#00ff88")
+            )
         }
     }
 

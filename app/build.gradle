@@ -11,8 +11,8 @@ android {
         applicationId "com.family.bankvoicealert"
         minSdk 21
         targetSdk 35
-        versionCode 72
-        versionName "1.3.41"
+        versionCode 73
+        versionName "1.3.42"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
