@@ -36,9 +36,10 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="알림이 안울린다면 삭제 후 재설치 해주세요."
-        android:textSize="18sp"
-        android:textColor="#ffaa00"
+        android:text="알림팝업 터치하면 꺼져요"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#ffffff"
         android:gravity="center"
         android:layout_marginBottom="24dp"/>
 
