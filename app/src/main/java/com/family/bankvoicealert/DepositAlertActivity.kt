@@ -24,7 +24,7 @@ class DepositAlertActivity : AppCompatActivity() {
         const val EXTRA_AMOUNT = "extra_amount"
         private const val TAG = "DepositAlertActivity"
         private const val BANNER_AD_ID = "ca-app-pub-8476619670449177/7746664082"
-        private const val DISMISS_DELAY_MS = 5000L
+        private const val DISMISS_DELAY_MS = 600_000L  // 10 minutes
     }
 
     private var bannerAdView: AdView? = null
@@ -70,7 +70,7 @@ class DepositAlertActivity : AppCompatActivity() {
         // Load banner ad
         loadBannerAd()
 
-        // Auto-dismiss after 5 seconds
+        // Auto-dismiss after 10 minutes
         dismissHandler.postDelayed(dismissRunnable, DISMISS_DELAY_MS)
     }
 
