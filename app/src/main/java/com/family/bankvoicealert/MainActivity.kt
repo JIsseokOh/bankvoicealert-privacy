@@ -483,10 +483,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateBatteryOptimizationButton() {
         if (isIgnoringBatteryOptimizations()) {
-            batteryOptimizationButton.text = "✅ 무제한 모드 활성화됨"
+            batteryOptimizationButton.text = "✅ 상시 가동 모드 활성화됨"
             batteryOptimizationButton.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
         } else {
-            batteryOptimizationButton.text = "⚡ 무제한 모드 설정"
+            batteryOptimizationButton.text = "⚡ 상시 가동 모드 설정"
             batteryOptimizationButton.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark))
         }
     }
@@ -495,7 +495,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!isIgnoringBatteryOptimizations()) {
                 AlertDialog.Builder(this)
-                    .setTitle("무제한 실행 모드")
+                    .setTitle("상시 가동 모드")
                     .setMessage("배터리 최적화를 제외하면 24시간 제한 없이 계속 실행됩니다.")
                     .setPositiveButton("설정하기") { _, _ ->
                         try {
@@ -517,7 +517,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 // 이미 제외되어 있는 경우
                 AlertDialog.Builder(this)
-                    .setTitle("무제한 실행 모드 활성화됨")
+                    .setTitle("상시 가동 모드 활성화됨")
                     .setMessage("이미 배터리 최적화가 제외되어 있습니다.\n24시간 제한 없이 계속 실행됩니다.")
                     .setPositiveButton("확인", null)
                     .show()

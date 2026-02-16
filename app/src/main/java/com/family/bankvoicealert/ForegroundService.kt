@@ -215,7 +215,7 @@ class ForegroundService : Service() {
         )
 
         val contentText = if (isIgnoringBatteryOptimizations()) {
-            "백그라운드 실행 중 - 무제한 모드"
+            "백그라운드 실행 중 - 상시 가동 모드"
         } else {
             val remainingHours = ((TimeUnit.HOURS.toMillis(24) - (System.currentTimeMillis() - serviceStartTime)) / TimeUnit.HOURS.toMillis(1)).toInt()
             if (remainingHours > 0) {

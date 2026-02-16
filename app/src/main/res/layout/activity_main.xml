@@ -111,7 +111,7 @@
                 android:id="@+id/batteryOptimizationButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="⚡ 무제한 모드 설정"
+                android:text="⚡ 상시 가동 모드 설정"
                 android:textColor="#000000"
                 android:backgroundTint="#ffaa00"
                 android:layout_gravity="center"
