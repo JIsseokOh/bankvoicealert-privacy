@@ -3,6 +3,12 @@ plugins {
     id 'org.jetbrains.kotlin.android'
 }
 
+def keystorePropertiesFile = rootProject.file("keystore.properties")
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace 'com.family.bankvoicealert'
     compileSdk 35
@@ -20,9 +26,9 @@ android {
     signingConfigs {
         release {
             storeFile file('../keystore/release-keystore.jks')
-            storePassword System.getenv("KEYSTORE_PASSWORD") ?: "REDACTED"
-            keyAlias System.getenv("KEY_ALIAS") ?: "tts"
-            keyPassword System.getenv("KEY_PASSWORD") ?: "REDACTED"
+            storePassword keystoreProperties['storePassword'] ?: System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias keystoreProperties['keyAlias'] ?: System.getenv("KEY_ALIAS") ?: ""
+            keyPassword keystoreProperties['keyPassword'] ?: System.getenv("KEY_PASSWORD") ?: ""
         }
     }
     
