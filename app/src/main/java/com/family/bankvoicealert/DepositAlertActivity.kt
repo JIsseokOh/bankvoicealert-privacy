@@ -6,28 +6,20 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import com.google.android.gms.ads.AdListener
-import com.google.android.gms.ads.AdRequest
-import com.google.android.gms.ads.AdSize
-import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.LoadAdError
 
 class DepositAlertActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_AMOUNT = "extra_amount"
-        private const val TAG = "DepositAlertActivity"
-        private const val BANNER_AD_ID = "ca-app-pub-8476619670449177/7746664082"
-        private const val DISMISS_DELAY_MS = 600_000L  // 10 minutes
+        private const val DISMISS_DELAY_MS = 90_000L  // 90 seconds
     }
 
-    private var bannerAdView: AdView? = null
+    private lateinit var adManager: AdManager
     private val dismissHandler = Handler(Looper.getMainLooper())
     private val dismissRunnable = Runnable { finish() }
 
@@ -56,6 +48,7 @@ class DepositAlertActivity : AppCompatActivity() {
         )
 
         setContentView(R.layout.activity_deposit_alert)
+        adManager = AdManager(this)
 
         val amount = intent.getStringExtra(EXTRA_AMOUNT) ?: ""
         val tvAmount = findViewById<TextView>(R.id.tvDepositAmount)
@@ -68,35 +61,26 @@ class DepositAlertActivity : AppCompatActivity() {
         }
 
         // Load banner ad
-        loadBannerAd()
+        val adContainer = findViewById<LinearLayout>(R.id.alertAdContainer)
+        adManager.loadAlertBannerAd(adContainer)
 
         // Auto-dismiss after 10 minutes
         dismissHandler.postDelayed(dismissRunnable, DISMISS_DELAY_MS)
     }
 
-    private fun loadBannerAd() {
-        val adContainer = findViewById<LinearLayout>(R.id.alertAdContainer)
-        val adView = AdView(this)
-        adView.setAdSize(AdSize.BANNER)
-        adView.adUnitId = BANNER_AD_ID
-        bannerAdView = adView
-        adContainer.addView(adView)
+    override fun onResume() {
+        super.onResume()
+        adManager.resumeBannerAd()
+    }
 
-        adView.loadAd(AdRequest.Builder().build())
-        adView.adListener = object : AdListener() {
-            override fun onAdLoaded() {
-                Log.d(TAG, "Alert banner ad loaded")
-            }
-            override fun onAdFailedToLoad(error: LoadAdError) {
-                Log.d(TAG, "Alert banner ad failed: ${error.message}")
-            }
-        }
+    override fun onPause() {
+        super.onPause()
+        adManager.pauseBannerAd()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         dismissHandler.removeCallbacks(dismissRunnable)
-        bannerAdView?.destroy()
-        bannerAdView = null
+        adManager.destroyBannerAd()
     }
 }

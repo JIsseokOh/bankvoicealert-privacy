@@ -24,6 +24,7 @@ import com.google.android.gms.ads.nativead.NativeAdView
 class AdManager(private val activity: Activity) {
 
     private val BANNER_AD_ID = "ca-app-pub-8476619670449177/7746664082"
+    private val ALERT_BANNER_AD_ID = "ca-app-pub-8476619670449177/3624863581"
     private val NATIVE_AD_ID = "ca-app-pub-8476619670449177/4134722132"
     private val TEST_BANNER_AD_ID = "ca-app-pub-3940256099942544/6300978111"
     private val TEST_NATIVE_AD_ID = "ca-app-pub-3940256099942544/2247696110"
@@ -46,7 +47,14 @@ class AdManager(private val activity: Activity) {
     }
 
     fun loadBannerAd(adContainer: ViewGroup) {
-        val adUnitId = if (USE_TEST_ADS) TEST_BANNER_AD_ID else BANNER_AD_ID
+        loadBannerAdInternal(adContainer, if (USE_TEST_ADS) TEST_BANNER_AD_ID else BANNER_AD_ID)
+    }
+
+    fun loadAlertBannerAd(adContainer: ViewGroup) {
+        loadBannerAdInternal(adContainer, if (USE_TEST_ADS) TEST_BANNER_AD_ID else ALERT_BANNER_AD_ID)
+    }
+
+    private fun loadBannerAdInternal(adContainer: ViewGroup, adUnitId: String) {
         val adView = AdView(activity)
         adView.setAdSize(AdSize.BANNER)
         adView.adUnitId = adUnitId
@@ -58,7 +66,7 @@ class AdManager(private val activity: Activity) {
 
         bannerAdView?.adListener = object : AdListener() {
             override fun onAdLoaded() {
-                Log.d("AdMob", "Banner ad loaded")
+                Log.d("AdMob", "Banner ad loaded ($adUnitId)")
             }
 
             override fun onAdFailedToLoad(loadAdError: LoadAdError) {
