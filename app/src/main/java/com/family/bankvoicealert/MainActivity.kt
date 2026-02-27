@@ -108,6 +108,9 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
+        // 종합 권한 체크 (꺼진 권한이 있으면 알림)
+        checkAllPermissions()
+
         // 첫 실행 체크 및 가이드 표시
         checkFirstRun()
 
@@ -251,6 +254,86 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    private fun checkAllPermissions() {
+        val missingPermissions = mutableListOf<String>()
+
+        // 1. 알림 접근 권한
+        if (!isNotificationServiceEnabled()) {
+            missingPermissions.add("알림 접근 권한")
+        }
+
+        // 2. 알림 표시 권한 (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                missingPermissions.add("알림 표시 권한")
+            }
+        }
+
+        // 3. SMS 권한
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
+            != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+            != PackageManager.PERMISSION_GRANTED) {
+            missingPermissions.add("SMS 수신 권한")
+        }
+
+        // 4. 배터리 최적화 제외
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isIgnoringBatteryOptimizations()) {
+            missingPermissions.add("상시 가동 모드 (배터리 최적화 제외)")
+        }
+
+        // 5. 다른 앱 위에 표시
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            missingPermissions.add("다른 앱 위에 표시 권한")
+        }
+
+        if (missingPermissions.isNotEmpty()) {
+            val message = buildString {
+                append("다음 권한이 꺼져 있습니다.\n정상 작동을 위해 모두 켜주세요.\n\n")
+                missingPermissions.forEachIndexed { index, perm ->
+                    append("${index + 1}. $perm\n")
+                }
+            }
+
+            AlertDialog.Builder(this)
+                .setTitle("권한 확인 필요")
+                .setMessage(message)
+                .setPositiveButton("설정하기") { _, _ ->
+                    // 가장 중요한 권한부터 설정 유도
+                    when {
+                        !isNotificationServiceEnabled() -> openNotificationSettings()
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this) -> {
+                            val intent = Intent(
+                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                                Uri.parse("package:$packageName")
+                            )
+                            startActivity(intent)
+                        }
+                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isIgnoringBatteryOptimizations() -> {
+                            try {
+                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+                                intent.data = Uri.parse("package:$packageName")
+                                startActivity(intent)
+                            } catch (e: Exception) {
+                                try {
+                                    startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+                                } catch (_: Exception) {}
+                            }
+                        }
+                        else -> {
+                            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                            }
+                            startActivity(intent)
+                        }
+                    }
+                }
+                .setNegativeButton("나중에", null)
+                .show()
+        }
+    }
+
     private fun checkPermissions() {
         val isEnabled = isNotificationServiceEnabled()
         serviceEnabled = isEnabled
