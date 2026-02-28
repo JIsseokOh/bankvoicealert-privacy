@@ -91,15 +91,7 @@ class MainActivity : AppCompatActivity() {
         // 배너 광고 로드
         val adContainer = findViewById<LinearLayout>(R.id.adContainer)
         adManager.loadBannerAd(adContainer)
-        requestSmsPermission()
-        // 알림 권한은 SMS 권한 결과 후 체이닝하여 요청 (동시 요청 시 무시되는 문제 방지)
-        // SMS 권한이 이미 허용된 경우 바로 알림 권한 요청
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
-            == PackageManager.PERMISSION_GRANTED &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-            == PackageManager.PERMISSION_GRANTED) {
-            requestNotificationPermission()
-        }
+        requestNotificationPermission()
 
         // 뒤로가기 버튼 처리
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
@@ -270,15 +262,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // 3. SMS 권한
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
-            != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-            != PackageManager.PERMISSION_GRANTED) {
-            missingPermissions.add("SMS 수신 권한")
-        }
-
-        // 4. 배터리 최적화 제외
+        // 3. 배터리 최적화 제외
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isIgnoringBatteryOptimizations()) {
             missingPermissions.add("상시 가동 모드 (배터리 최적화 제외)")
         }
@@ -586,20 +570,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun requestSmsPermission() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) 
-            != PackageManager.PERMISSION_GRANTED ||
-            ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) 
-            != PackageManager.PERMISSION_GRANTED) {
-            
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.RECEIVE_SMS, Manifest.permission.READ_SMS),
-                100
-            )
-        }
-    }
-    
     private fun requestNotificationPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -670,13 +640,6 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
-            100 -> {
-                if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(this, "SMS 권한 허용됨", Toast.LENGTH_SHORT).show()
-                }
-                // SMS 권한 처리 후 알림 권한 요청
-                requestNotificationPermission()
-            }
             101 -> {
                 if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     Toast.makeText(this, "알림 권한 허용됨", Toast.LENGTH_SHORT).show()
