@@ -300,34 +300,10 @@ class MainActivity : AppCompatActivity() {
                 .setTitle("권한 확인 필요")
                 .setMessage(message)
                 .setPositiveButton("설정하기") { _, _ ->
-                    // 가장 중요한 권한부터 설정 유도
-                    when {
-                        !isNotificationServiceEnabled() -> openNotificationSettings()
-                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this) -> {
-                            val intent = Intent(
-                                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                                Uri.parse("package:$packageName")
-                            )
-                            startActivity(intent)
-                        }
-                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isIgnoringBatteryOptimizations() -> {
-                            try {
-                                val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                                intent.data = Uri.parse("package:$packageName")
-                                startActivity(intent)
-                            } catch (e: Exception) {
-                                try {
-                                    startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
-                                } catch (_: Exception) {}
-                            }
-                        }
-                        else -> {
-                            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
-                            }
-                            startActivity(intent)
-                        }
-                    }
+                    // 앱 권한 설정 페이지로 이동 (모든 권한을 한 곳에서 관리)
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    intent.data = Uri.parse("package:$packageName")
+                    startActivity(intent)
                 }
                 .setNegativeButton("나중에", null)
                 .show()
