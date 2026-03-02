@@ -23,7 +23,6 @@ import android.widget.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.NotificationManagerCompat
-import android.os.CountDownTimer
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -665,73 +664,14 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun showExitDialog() {
-        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_exit_wait, null)
-        val countdownText = dialogView.findViewById<TextView>(R.id.countdownText)
-        val messageText = dialogView.findViewById<TextView>(R.id.messageText)
-        val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
-        val exitButton = dialogView.findViewById<Button>(R.id.exitButton)
-        val nativeAdContainer = dialogView.findViewById<FrameLayout>(R.id.nativeAdContainer)
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .setCancelable(true)
-            .create()
-
-        // 네이티브 광고 로드
-        adManager.loadNativeAd(nativeAdContainer)
-
-        var remainingSeconds = 5
-        val countDownTimer = object : CountDownTimer(5000, 1000) {
-            override fun onTick(millisUntilFinished: Long) {
-                remainingSeconds = (millisUntilFinished / 1000).toInt() + 1
-
-                // 카운트다운 텍스트 업데이트
-                when (remainingSeconds) {
-                    5 -> countdownText.text = "5초 후 알리미 시작"
-                    4 -> countdownText.text = "4초 후 알리미 시작"
-                    3 -> countdownText.text = "3초 후 알리미 시작"
-                    2 -> countdownText.text = "2초 후 알리미 시작"
-                    1 -> countdownText.text = "1초 후 알리미 시작"
-                }
-
-                // 메시지 업데이트
-                when (remainingSeconds) {
-                    5, 4, 3 -> messageText.text = "광고 수익으로 무료 서비스를 유지합니다"
-                    2, 1 -> messageText.text = "대한민국 소상공인 파이팅!"
-                }
-            }
-
-            override fun onFinish() {
-                countdownText.text = "알리미 시작!"
-                messageText.text = "엄마아빠, 할머니할아버지 오늘도 힘내세용"
-                exitButton.isEnabled = true
-                exitButton.setBackgroundColor(ContextCompat.getColor(this@MainActivity, android.R.color.holo_red_dark))
-            }
-        }
-
-        cancelButton.setOnClickListener {
-            countDownTimer.cancel()
-            adManager.destroyNativeAd()
-            dialog.dismiss()
-        }
-
-        exitButton.setOnClickListener {
-            if (exitButton.isEnabled) {
-                countDownTimer.cancel()
-                adManager.destroyNativeAd()
-                dialog.dismiss()
+        AlertDialog.Builder(this)
+            .setTitle("앱 종료")
+            .setMessage("백그라운드에서 알림을 계속 감지합니다.")
+            .setPositiveButton("종료") { _, _ ->
                 finish()
             }
-        }
-
-        // 다이얼로그 취소 시(뒤로가기) 처리
-        dialog.setOnCancelListener {
-            countDownTimer.cancel()
-            adManager.destroyNativeAd()
-        }
-
-        dialog.show()
-        countDownTimer.start()
+            .setNegativeButton("취소", null)
+            .show()
     }
 
     private fun migratePreferences() {
