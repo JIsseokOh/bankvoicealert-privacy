@@ -108,6 +108,12 @@ class BankNotificationService : NotificationListenerService() {
                 return
             }
 
+            // SMS 앱에서 온 알림은 은행 관련 키워드가 있는지 추가 확인
+            if (isSmsApp(packageName) && !hasBankingContext(text)) {
+                Log.d(TAG, "SMS without banking context, skipping: $text")
+                return
+            }
+
             // 금액 추출
             val amount = extractAmount(text)
             if (amount.isNotEmpty()) {
@@ -162,8 +168,25 @@ class BankNotificationService : NotificationListenerService() {
     private fun isDepositNotification(text: String): Boolean {
         val lowerText = text.lowercase(Locale.ROOT)
         // "입금" 키워드와 금액 패턴 (xxx원) 확인
-        return lowerText.contains("입금") &&
-               Regex("[0-9,]+\\s?원(?![가-힣])").containsMatchIn(text)
+        if (!lowerText.contains("입금") ||
+            !Regex("[0-9,]+\\s?원(?![가-힣])").containsMatchIn(text)) {
+            return false
+        }
+
+        // 비입금 알림 제외 (신용정보 조회, 채권추심, 잔액 안내 등)
+        val excludeKeywords = listOf(
+            "신용정보",     // 신용정보 회사 (고려신용정보 등)
+            "추심",         // 채권추심
+            "예금주",       // 계좌 정보 안내 (잔액 조회)
+            "기준"          // "~일 기준" 잔액/입금액 안내
+        )
+
+        if (excludeKeywords.any { text.contains(it) }) {
+            Log.d(TAG, "Excluded non-deposit notification: $text")
+            return false
+        }
+
+        return true
     }
 
     private fun extractAmount(text: String): String {
@@ -237,6 +260,34 @@ class BankNotificationService : NotificationListenerService() {
         } catch (e: Exception) {
             Log.e(TAG, "Error showing deposit notification", e)
         }
+    }
+
+    private fun isSmsApp(packageName: String): Boolean {
+        val smsApps = listOf(
+            "com.samsung.android.messaging",
+            "com.google.android.apps.messaging",
+            "com.android.mms",
+            "com.android.messaging"
+        )
+        return smsApps.contains(packageName) ||
+               packageName.contains("messaging") ||
+               packageName.contains(".mms") ||
+               packageName.contains(".sms")
+    }
+
+    private fun hasBankingContext(text: String): Boolean {
+        val bankKeywords = listOf(
+            // 은행명
+            "은행", "KB", "NH", "IBK", "SC", "BNK", "DGB", "JB",
+            "카카오뱅크", "토스뱅크", "케이뱅크",
+            "국민", "신한", "하나", "우리", "농협", "기업", "수협", "산업",
+            "광주", "전북", "경남", "대구", "부산", "제주",
+            // 금융 서비스
+            "카드", "증권", "보험", "페이", "pay",
+            // 거래 관련
+            "잔액", "계좌", "이체"
+        )
+        return bankKeywords.any { text.contains(it, ignoreCase = true) }
     }
 
     private fun isBlockedApp(packageName: String): Boolean {
