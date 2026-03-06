@@ -475,12 +475,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateServiceToggleButton() {
         if (serviceEnabled) {
-            serviceToggleButton.text = "알림 감지 활성화됨"
+            serviceToggleButton.text = "1번 버튼"
             serviceToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
                 android.graphics.Color.parseColor("#00ff88")
             )
         } else {
-            serviceToggleButton.text = "알림 감지 시작"
+            serviceToggleButton.text = "1번 버튼"
             serviceToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
                 android.graphics.Color.parseColor("#00ff88")
             )
@@ -489,12 +489,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateBackgroundToggleButton() {
         if (backgroundEnabled) {
-            backgroundToggleButton.text = "백그라운드 실행 중"
+            backgroundToggleButton.text = "2번 버튼"
             backgroundToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
                 android.graphics.Color.parseColor("#00ff88")
             )
         } else {
-            backgroundToggleButton.text = "백그라운드 실행"
+            backgroundToggleButton.text = "2번 버튼"
             backgroundToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
                 android.graphics.Color.parseColor("#00ff88")
             )
