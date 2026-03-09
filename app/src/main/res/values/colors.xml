@@ -7,10 +7,40 @@
     <color name="teal_700">#FF018786</color>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- Primary palette -->
     <color name="primary_green">#00ff88</color>
     <color name="primary_green_dark">#00cc66</color>
-    <color name="dark_background">#1a1a1a</color>
-    <color name="card_background">#2a2a2a</color>
-    <color name="text_primary">#ffffff</color>
-    <color name="text_secondary">#888888</color>
+    <color name="primary_green_glow">#3300ff88</color>
+    <color name="primary_green_subtle">#1A00ff88</color>
+
+    <!-- Background hierarchy -->
+    <color name="dark_background">#0D0F14</color>
+    <color name="dark_background_secondary">#141720</color>
+    <color name="card_background">#1C1F2E</color>
+    <color name="card_background_light">#232840</color>
+    <color name="card_border">#2A3050</color>
+
+    <!-- Text hierarchy -->
+    <color name="text_primary">#F0F2F5</color>
+    <color name="text_secondary">#8B92A8</color>
+    <color name="text_tertiary">#5A6178</color>
+
+    <!-- Accent colors -->
+    <color name="accent_orange">#FF9F43</color>
+    <color name="accent_orange_dark">#E8871E</color>
+    <color name="accent_red">#FF6B6B</color>
+    <color name="accent_blue">#54A0FF</color>
+    <color name="accent_purple">#A855F7</color>
+    <color name="accent_purple_dark">#7C3AED</color>
+
+    <!-- Surface colors -->
+    <color name="surface_success">#0A2E1A</color>
+    <color name="surface_warning">#2E1F0A</color>
+    <color name="surface_error">#2E0A0A</color>
+    <color name="surface_info">#0A1A2E</color>
+    <color name="surface_purple">#1A0A2E</color>
+
+    <!-- Divider -->
+    <color name="divider">#1F2940</color>
 </resources>

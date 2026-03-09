@@ -7,7 +7,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="24dp"
+        android:padding="28dp"
         android:background="@drawable/rounded_dialog_bg">
 
         <!-- 헤더 -->
@@ -19,13 +19,15 @@
             android:textSize="22sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:layout_marginBottom="20dp"/>
+            android:layout_marginBottom="24dp"
+            android:letterSpacing="0.02"/>
 
         <!-- 설명 1 -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginBottom="16dp">
 
             <TextView
@@ -36,15 +38,15 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:background="@android:color/holo_green_light"/>
+                android:background="@drawable/guide_number_bg"/>
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="14dp"
                 android:text="입금 내역 자동 기록"
-                android:textColor="#ffffff"
+                android:textColor="#F0F2F5"
                 android:textSize="15sp"
                 android:gravity="center_vertical"/>
         </LinearLayout>
@@ -54,6 +56,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginBottom="16dp">
 
             <TextView
@@ -64,15 +67,15 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:background="@android:color/holo_green_light"/>
+                android:background="@drawable/guide_number_bg"/>
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="14dp"
                 android:text="달력에서 날짜 선택 가능"
-                android:textColor="#ffffff"
+                android:textColor="#F0F2F5"
                 android:textSize="15sp"
                 android:gravity="center_vertical"/>
         </LinearLayout>
@@ -82,6 +85,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginBottom="16dp">
 
             <TextView
@@ -92,15 +96,15 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:background="@android:color/holo_green_light"/>
+                android:background="@drawable/guide_number_bg"/>
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="14dp"
                 android:text="&lt; &gt; 버튼으로 월간 이동 가능"
-                android:textColor="#ffffff"
+                android:textColor="#F0F2F5"
                 android:textSize="15sp"
                 android:gravity="center_vertical"/>
         </LinearLayout>
@@ -110,6 +114,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginBottom="16dp">
 
             <TextView
@@ -120,15 +125,15 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:background="@android:color/holo_green_light"/>
+                android:background="@drawable/guide_number_bg"/>
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="14dp"
                 android:text="입금 내역 삭제 가능"
-                android:textColor="#ffffff"
+                android:textColor="#F0F2F5"
                 android:textSize="15sp"
                 android:gravity="center_vertical"/>
         </LinearLayout>
@@ -138,6 +143,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
+            android:gravity="center_vertical"
             android:layout_marginBottom="16dp">
 
             <TextView
@@ -148,15 +154,15 @@
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:background="@android:color/holo_green_light"/>
+                android:background="@drawable/guide_number_bg"/>
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="12dp"
+                android:layout_marginStart="14dp"
                 android:text="오늘도 파이팅!"
-                android:textColor="#ffffff"
+                android:textColor="#F0F2F5"
                 android:textSize="15sp"
                 android:gravity="center_vertical"/>
         </LinearLayout>
@@ -166,21 +172,23 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="※ 앱 데이터 삭제 시 기록도 함께 삭제됩니다"
-            android:textColor="#ffaa00"
-            android:textSize="14sp"
+            android:textColor="#FF9F43"
+            android:textSize="13sp"
             android:gravity="center"
-            android:layout_marginBottom="16dp"/>
+            android:layout_marginBottom="20dp"/>
 
         <!-- 확인 버튼 -->
         <Button
             android:id="@+id/btnConfirm"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:text="확인"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:backgroundTint="#00ff88"
-            android:textColor="#000000"/>
+            android:background="@drawable/btn_primary_bg"
+            android:textColor="#000000"
+            android:stateListAnimator="@null"
+            android:letterSpacing="0.05"/>
 
     </LinearLayout>
 </ScrollView>

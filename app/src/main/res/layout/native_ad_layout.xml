@@ -8,7 +8,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:background="#FFFFFF"
+        android:background="#1C1F2E"
         android:padding="12dp">
 
         <!-- Ad attribution -->
@@ -16,7 +16,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="광고"
-            android:textColor="#FFA500"
+            android:textColor="#FF9F43"
             android:textSize="11sp"
             android:textStyle="bold"
             android:paddingStart="4dp"
@@ -50,7 +50,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:textColor="#000000"
+                android:textColor="#F0F2F5"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:maxLines="2"
@@ -62,7 +62,7 @@
             android:id="@+id/ad_body"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#555555"
+            android:textColor="#8B92A8"
             android:textSize="14sp"
             android:maxLines="2"
             android:ellipsize="end"
@@ -73,8 +73,10 @@
             android:id="@+id/ad_call_to_action"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="#FFFFFF"
+            android:textColor="#000000"
             android:textSize="14sp"
-            android:backgroundTint="#00ff88"/>
+            android:textStyle="bold"
+            android:background="@drawable/btn_primary_bg"
+            android:stateListAnimator="@null"/>
     </LinearLayout>
 </com.google.android.gms.ads.nativead.NativeAdView>

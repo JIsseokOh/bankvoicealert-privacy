@@ -13,30 +13,31 @@
         android:layout_gravity="top"
         android:orientation="vertical"
         android:layout_marginTop="32dp"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp">
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp">
 
         <!-- Deposit alert card -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:cardBackgroundColor="#2a2a2a"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="8dp">
+            app:cardBackgroundColor="@android:color/transparent"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="12dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
-                android:padding="16dp"
-                android:gravity="center_vertical">
+                android:padding="20dp"
+                android:gravity="center_vertical"
+                android:background="@drawable/deposit_alert_card_bg">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="💰"
-                    android:textSize="36sp"
-                    android:layout_marginEnd="12dp"/>
+                    android:textSize="40sp"
+                    android:layout_marginEnd="16dp"/>
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -50,17 +51,18 @@
                         android:text="입금확인"
                         android:textColor="#00ff88"
                         android:textSize="14sp"
-                        android:textStyle="bold"/>
+                        android:textStyle="bold"
+                        android:letterSpacing="0.1"/>
 
                     <TextView
                         android:id="@+id/tvDepositAmount"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="10,000원 입금되었습니다"
-                        android:textColor="#ffffff"
+                        android:textColor="#F0F2F5"
                         android:textSize="20sp"
                         android:textStyle="bold"
-                        android:layout_marginTop="4dp"/>
+                        android:layout_marginTop="6dp"/>
                 </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -73,7 +75,7 @@
             android:orientation="vertical"
             android:gravity="center"
             android:layout_marginTop="8dp"
-            android:background="#2a2a2a"
+            android:background="#1C1F2E"
             android:paddingTop="4dp"
             android:paddingBottom="4dp"/>
 

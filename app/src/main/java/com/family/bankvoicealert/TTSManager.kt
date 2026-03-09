@@ -63,6 +63,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val vibrator: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     private val speechQueue = ConcurrentLinkedQueue<SpeechItem>()
+    private var cloudTTSManager: CloudTTSManager? = null
+    var useCloudTTS: Boolean = false
 
     private var tts: TextToSpeech? = null
     private var audioFocusRequest: Any? = null
@@ -153,19 +155,25 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     }
 
     fun speakSimple(message: String, amount: String, suffix: String? = null) {
-        if (!isInitialized) {
-            Log.w(TAG, "TTS not initialized")
-            return
-        }
-
         val fullMessage = if (suffix != null) {
             "$message. ${formatAmount(amount)}. $suffix"
         } else {
             "$message. ${formatAmount(amount)}"
         }
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        val speechRate = prefs.getFloat("speech_rate", 1.0f)
         val volumePercent = prefs.getInt("volume_percent", 100)
+
+        if (useCloudTTS) {
+            getCloudTTSManager().speak(fullMessage, volumePercent)
+            return
+        }
+
+        if (!isInitialized) {
+            Log.w(TAG, "TTS not initialized")
+            return
+        }
+
+        val speechRate = prefs.getFloat("speech_rate", 1.0f)
 
         speechQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
         Log.d(TAG, "Added to queue: $fullMessage (queue size: ${speechQueue.size})")
@@ -176,15 +184,21 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     }
 
     fun speakDeposit(bank: String, amount: String) {
+        val fullMessage = "띵동. ${formatAmount(amount)}"
+        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+        val volumePercent = prefs.getInt("volume_percent", 100)
+
+        if (useCloudTTS) {
+            getCloudTTSManager().speak(fullMessage, volumePercent)
+            return
+        }
+
         if (!isInitialized) {
             Log.w(TAG, "TTS not initialized")
             return
         }
 
-        val fullMessage = "입금확인. ${formatAmount(amount)}"
-        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val speechRate = prefs.getFloat("speech_rate", 1.0f)
-        val volumePercent = prefs.getInt("volume_percent", 100)
 
         speechQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
         Log.d(TAG, "Added to queue: $fullMessage (queue size: ${speechQueue.size})")
@@ -192,6 +206,13 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         if (!isSpeaking) {
             processNextInQueue()
         }
+    }
+
+    private fun getCloudTTSManager(): CloudTTSManager {
+        if (cloudTTSManager == null) {
+            cloudTTSManager = CloudTTSManager(context)
+        }
+        return cloudTTSManager!!
     }
 
     private fun processNextInQueue() {

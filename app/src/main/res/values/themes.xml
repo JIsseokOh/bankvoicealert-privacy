@@ -3,17 +3,19 @@
     <!-- Base application theme -->
     <style name="Theme.BankVoiceAlert" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Primary brand color -->
-        <item name="colorPrimary">#00ff88</item>
-        <item name="colorPrimaryVariant">#00cc66</item>
+        <item name="colorPrimary">@color/primary_green</item>
+        <item name="colorPrimaryVariant">@color/primary_green_dark</item>
         <item name="colorOnPrimary">@color/black</item>
         <!-- Secondary brand color -->
-        <item name="colorSecondary">#00ff88</item>
-        <item name="colorSecondaryVariant">#00cc66</item>
+        <item name="colorSecondary">@color/primary_green</item>
+        <item name="colorSecondaryVariant">@color/primary_green_dark</item>
         <item name="colorOnSecondary">@color/black</item>
         <!-- Status bar color -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <item name="android:statusBarColor">@color/dark_background</item>
+        <item name="android:navigationBarColor">@color/dark_background</item>
         <!-- Customize your theme here -->
-        <item name="android:windowBackground">#1a1a1a</item>
+        <item name="android:windowBackground">@color/dark_background</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
     <!-- Deposit alert overlay theme -->
@@ -22,7 +24,7 @@
         <item name="android:windowBackground">@android:color/transparent</item>
         <item name="android:windowNoTitle">true</item>
         <item name="android:backgroundDimEnabled">true</item>
-        <item name="android:backgroundDimAmount">0.3</item>
+        <item name="android:backgroundDimAmount">0.5</item>
         <item name="android:windowAnimationStyle">@android:style/Animation.Toast</item>
     </style>
 </resources>

@@ -36,6 +36,8 @@ class BankNotificationService : NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
         ttsManager = TTSManager.getInstance(this)
+        ttsManager.useCloudTTS = getSharedPreferences("settings", MODE_PRIVATE)
+            .getBoolean("use_cloud_tts", false)
         depositDataManager = DepositDataManager.getInstance(this)
         updateChecker = UpdateChecker(this)
         isServiceActive = true
@@ -139,7 +141,7 @@ class BankNotificationService : NotificationListenerService() {
                     }
 
                     // 음성 알림 (업데이트 필요 시 메시지 추가)
-                    ttsManager.speakSimple("입금확인", amount, updateMessage)
+                    ttsManager.speakSimple("띵동", amount, updateMessage)
                 } else {
                     Log.d(TAG, "중복 알림 무시: ${amount}원")
                 }

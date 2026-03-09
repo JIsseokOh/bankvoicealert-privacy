@@ -4,7 +4,7 @@
     android:layout_height="wrap_content"
     android:orientation="vertical"
     android:padding="24dp"
-    android:background="#F5F5F5">
+    android:background="@drawable/exit_dialog_bg">
 
     <!-- 네이티브 광고 컨테이너 -->
     <FrameLayout
@@ -19,21 +19,22 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="5초 후 알리미 시작"
-        android:textColor="#000000"
-        android:textSize="28sp"
+        android:textColor="#F0F2F5"
+        android:textSize="26sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="8dp"/>
+        android:layout_marginBottom="8dp"
+        android:letterSpacing="0.02"/>
 
     <TextView
         android:id="@+id/messageText"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="광고 수익으로 무료 서비스를 유지합니다"
-        android:textColor="#555555"
-        android:textSize="16sp"
+        android:textColor="#8B92A8"
+        android:textSize="15sp"
         android:gravity="center"
-        android:layout_marginBottom="20dp"/>
+        android:layout_marginBottom="24dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -44,23 +45,25 @@
         <Button
             android:id="@+id/cancelButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:text="취소"
-            android:textColor="#000000"
-            android:backgroundTint="#ffffff"
-            android:layout_marginEnd="8dp"/>
+            android:textColor="#C0C6D8"
+            android:background="@drawable/btn_gray_bg"
+            android:layout_marginEnd="8dp"
+            android:stateListAnimator="@null"/>
 
         <Button
             android:id="@+id/exitButton"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="48dp"
             android:layout_weight="1"
             android:text="시작"
             android:textColor="#ffffff"
             android:backgroundTint="#888888"
             android:enabled="false"
-            android:layout_marginStart="8dp"/>
+            android:layout_marginStart="8dp"
+            android:stateListAnimator="@null"/>
 
     </LinearLayout>
 

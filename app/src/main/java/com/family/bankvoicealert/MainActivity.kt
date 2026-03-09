@@ -55,6 +55,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batteryOptimizationButton: Button
     private lateinit var salesSummaryButton: Button
     private lateinit var popupToggleButton: Button
+    private lateinit var ttsModeToggleButton: Button
     private lateinit var depositDataManager: DepositDataManager
 
     override fun attachBaseContext(newBase: Context) {
@@ -95,7 +96,7 @@ class MainActivity : AppCompatActivity() {
         // 뒤로가기 버튼 처리
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                showExitDialog()
+                finish()
             }
         })
 
@@ -130,6 +131,7 @@ class MainActivity : AppCompatActivity() {
         batteryOptimizationButton = findViewById(R.id.batteryOptimizationButton)
         salesSummaryButton = findViewById(R.id.salesSummaryButton)
         popupToggleButton = findViewById(R.id.popupToggleButton)
+        ttsModeToggleButton = findViewById(R.id.ttsModeToggleButton)
     }
     
     private fun loadSettings() {
@@ -155,6 +157,11 @@ class MainActivity : AppCompatActivity() {
 
         // 팝업 알림 상태 로드
         updatePopupToggleButton(prefs.getBoolean("popup_alert_enabled", true))
+
+        // TTS 모드 로드
+        val useCloud = prefs.getBoolean("use_cloud_tts", false)
+        ttsManager.useCloudTTS = useCloud
+        updateTTSModeButton(useCloud)
     }
     
     private fun setupListeners() {
@@ -228,6 +235,14 @@ class MainActivity : AppCompatActivity() {
 
         permissionButton.setOnClickListener {
             openNotificationSettings()
+        }
+
+        ttsModeToggleButton.setOnClickListener {
+            val current = prefs.getBoolean("use_cloud_tts", false)
+            val newState = !current
+            prefs.edit().putBoolean("use_cloud_tts", newState).apply()
+            ttsManager.useCloudTTS = newState
+            updateTTSModeButton(newState)
         }
         
         // 백그라운드 실행 버튼
@@ -341,12 +356,35 @@ class MainActivity : AppCompatActivity() {
             statusText.setTextColor(android.graphics.Color.parseColor("#00ff88"))
         } else {
             statusText.text = "1번, 아래 버튼 누르기"
-            statusText.setTextColor(getColor(android.R.color.holo_red_dark))
+            statusText.setTextColor(android.graphics.Color.parseColor("#FF6B6B"))
         }
     }
     
+    private fun updateTTSModeButton(useCloud: Boolean) {
+        ttsModeToggleButton.backgroundTintList = null
+        val greenColor = android.graphics.Color.parseColor("#00FF88")
+        val grayColor = android.graphics.Color.parseColor("#C0C6D8")
+
+        if (useCloud) {
+            // 클라우드 모드: "반응속도  발음" - 발음만 초록색
+            val text = "반응속도  발음"
+            val spannable = android.text.SpannableString(text)
+            spannable.setSpan(android.text.style.ForegroundColorSpan(grayColor), 0, 4, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(android.text.style.ForegroundColorSpan(greenColor), 6, 8, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            ttsModeToggleButton.setText(spannable, android.widget.TextView.BufferType.SPANNABLE)
+            ttsModeToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
+        } else {
+            // 로컬 모드: "반응속도  발음" - 반응속도만 초록색
+            val text = "반응속도  발음"
+            val spannable = android.text.SpannableString(text)
+            spannable.setSpan(android.text.style.ForegroundColorSpan(greenColor), 0, 4, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            spannable.setSpan(android.text.style.ForegroundColorSpan(grayColor), 6, 8, android.text.Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            ttsModeToggleButton.setText(spannable, android.widget.TextView.BufferType.SPANNABLE)
+            ttsModeToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
+        }
+    }
+
     private fun testVoiceAlert() {
-        // 고정값: 입금확인 1만원
         ttsManager.speakDeposit("테스트", "10000")
 
         // 팝업 알림이 켜져 있을 때만 표시
@@ -469,49 +507,32 @@ class MainActivity : AppCompatActivity() {
             backgroundText.setTextColor(android.graphics.Color.parseColor("#00ff88"))
         } else {
             backgroundText.text = "2번, 아래 버튼 누르기"
-            backgroundText.setTextColor(getColor(android.R.color.holo_red_dark))
+            backgroundText.setTextColor(android.graphics.Color.parseColor("#FF6B6B"))
         }
     }
 
     private fun updateServiceToggleButton() {
-        if (serviceEnabled) {
-            serviceToggleButton.text = "1번 버튼"
-            serviceToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                android.graphics.Color.parseColor("#00ff88")
-            )
-        } else {
-            serviceToggleButton.text = "1번 버튼"
-            serviceToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                android.graphics.Color.parseColor("#00ff88")
-            )
-        }
+        serviceToggleButton.text = "1번 버튼"
+        serviceToggleButton.backgroundTintList = null
+        serviceToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_primary_bg)
     }
 
     private fun updateBackgroundToggleButton() {
-        if (backgroundEnabled) {
-            backgroundToggleButton.text = "2번 버튼"
-            backgroundToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                android.graphics.Color.parseColor("#00ff88")
-            )
-        } else {
-            backgroundToggleButton.text = "2번 버튼"
-            backgroundToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                android.graphics.Color.parseColor("#00ff88")
-            )
-        }
+        backgroundToggleButton.text = "2번 버튼"
+        backgroundToggleButton.backgroundTintList = null
+        backgroundToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_primary_bg)
     }
 
     private fun updatePopupToggleButton(enabled: Boolean) {
+        popupToggleButton.backgroundTintList = null
         if (enabled) {
             popupToggleButton.text = "팝업 알림 켜짐"
-            popupToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                ContextCompat.getColor(this, android.R.color.holo_green_dark)
-            )
+            popupToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
+            popupToggleButton.setTextColor(android.graphics.Color.parseColor("#C0C6D8"))
         } else {
             popupToggleButton.text = "팝업 알림 꺼짐"
-            popupToggleButton.backgroundTintList = android.content.res.ColorStateList.valueOf(
-                ContextCompat.getColor(this, android.R.color.holo_red_dark)
-            )
+            popupToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
+            popupToggleButton.setTextColor(android.graphics.Color.parseColor("#FF6B6B"))
         }
     }
 
@@ -524,12 +545,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateBatteryOptimizationButton() {
+        batteryOptimizationButton.backgroundTintList = null
         if (isIgnoringBatteryOptimizations()) {
             batteryOptimizationButton.text = "✅ 상시 가동 모드 활성화됨"
-            batteryOptimizationButton.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_green_dark))
+            batteryOptimizationButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
+            batteryOptimizationButton.setTextColor(android.graphics.Color.parseColor("#C0C6D8"))
         } else {
             batteryOptimizationButton.text = "⚡ 상시 가동 모드 설정"
-            batteryOptimizationButton.setBackgroundColor(ContextCompat.getColor(this, android.R.color.holo_orange_dark))
+            batteryOptimizationButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
+            batteryOptimizationButton.setTextColor(android.graphics.Color.parseColor("#C0C6D8"))
         }
     }
 
