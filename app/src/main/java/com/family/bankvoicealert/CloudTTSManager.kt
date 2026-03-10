@@ -9,35 +9,18 @@ import android.media.AudioTrack
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
-import android.util.Base64
 import android.util.Log
-import okhttp3.*
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.concurrent.TimeUnit
 
 class CloudTTSManager(private val context: Context) {
 
     companion object {
         private const val TAG = "CloudTTSManager"
-        private const val GEMINI_TTS_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-tts:generateContent"
         private const val CACHE_DIR_NAME = "tts_cache"
-        private const val MAX_CACHE_SIZE = 200
         private const val SAMPLE_RATE = 24000
-        private const val VOICE_NAME = "Kore"
     }
-
-    private val client = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(30, TimeUnit.SECONDS)
-        .writeTimeout(10, TimeUnit.SECONDS)
-        .build()
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
@@ -62,6 +45,10 @@ class CloudTTSManager(private val context: Context) {
         }
     }
 
+    fun hasCachedAudio(text: String): Boolean {
+        return File(cacheDir, getCacheKey(text)).exists()
+    }
+
     private fun processNextInQueue() {
         if (speechQueue.isEmpty() || isSpeaking) return
         val item = speechQueue.poll() ?: return
@@ -69,11 +56,11 @@ class CloudTTSManager(private val context: Context) {
 
         Thread {
             try {
-                val pcmData = getCachedAudio(item.message) ?: synthesizeAndCache(item.message)
+                val pcmData = getCachedAudio(item.message)
                 if (pcmData != null) {
                     playPcmAudio(pcmData, item.volumePercent)
                 } else {
-                    Log.e(TAG, "Failed to get audio for: ${item.message}")
+                    Log.w(TAG, "No cached audio for: ${item.message}")
                     isSpeaking = false
                     processNextInQueue()
                 }
@@ -91,61 +78,6 @@ class CloudTTSManager(private val context: Context) {
             Log.d(TAG, "Cache hit: $text")
             cacheFile.readBytes()
         } else null
-    }
-
-    private fun synthesizeAndCache(text: String): ByteArray? {
-        val apiKey = BuildConfig.GEMINI_API_KEY
-        if (apiKey.isEmpty()) {
-            Log.e(TAG, "Gemini API key not configured")
-            return null
-        }
-
-        val requestBody = JSONObject().apply {
-            put("contents", JSONArray().put(JSONObject().apply {
-                put("parts", JSONArray().put(JSONObject().apply {
-                    put("text", text)
-                }))
-            }))
-            put("generationConfig", JSONObject().apply {
-                put("responseModalities", JSONArray().put("AUDIO"))
-                put("speechConfig", JSONObject().apply {
-                    put("voiceConfig", JSONObject().apply {
-                        put("prebuiltVoiceConfig", JSONObject().apply {
-                            put("voiceName", VOICE_NAME)
-                        })
-                    })
-                })
-            })
-        }.toString()
-
-        val request = Request.Builder()
-            .url("$GEMINI_TTS_URL?key=$apiKey")
-            .addHeader("Content-Type", "application/json")
-            .post(requestBody.toRequestBody("application/json".toMediaType()))
-            .build()
-
-        val response = client.newCall(request).execute()
-        if (!response.isSuccessful) {
-            Log.e(TAG, "Gemini TTS API error: ${response.code} ${response.body?.string()}")
-            return null
-        }
-
-        val json = JSONObject(response.body?.string() ?: return null)
-        val candidates = json.optJSONArray("candidates") ?: return null
-        val content = candidates.getJSONObject(0).optJSONObject("content") ?: return null
-        val parts = content.optJSONArray("parts") ?: return null
-        val inlineData = parts.getJSONObject(0).optJSONObject("inlineData") ?: return null
-        val audioBase64 = inlineData.getString("data")
-
-        val pcmData = Base64.decode(audioBase64, Base64.DEFAULT)
-
-        // Cache to file
-        val cacheFile = File(cacheDir, getCacheKey(text))
-        FileOutputStream(cacheFile).use { it.write(pcmData) }
-        Log.d(TAG, "Cached: $text -> ${cacheFile.name} (${pcmData.size} bytes)")
-
-        trimCache()
-        return pcmData
     }
 
     private fun playPcmAudio(pcmData: ByteArray, volumePercent: Int) {
@@ -210,17 +142,6 @@ class CloudTTSManager(private val context: Context) {
     private fun getCacheKey(text: String): String {
         val hash = text.hashCode().toUInt().toString(16)
         return "gemini_tts_${hash}.pcm"
-    }
-
-    private fun trimCache() {
-        val files = cacheDir.listFiles() ?: return
-        if (files.size > MAX_CACHE_SIZE) {
-            files.sortBy { it.lastModified() }
-            val toDelete = files.size - MAX_CACHE_SIZE
-            for (i in 0 until toDelete) {
-                files[i].delete()
-            }
-        }
     }
 
     private fun setVolume(percent: Int) {
@@ -306,23 +227,23 @@ class CloudTTSManager(private val context: Context) {
     }
 
     /**
-     * Pre-generate TTS audio for common deposit amounts (1,000 ~ 20,000 won in 1,000 increments).
+     * Copy pre-generated TTS audio from bundled assets to cache.
+     * Assets cover 500 ~ 50,000 won in 500 increments (100 files).
      * Runs in background thread. Skips already-cached amounts.
      */
-    fun preGenerateCommonAmounts() {
+    fun loadPreGeneratedAssets() {
         if (isPreGenerating) {
-            Log.d(TAG, "Pre-generation already in progress, skipping")
+            Log.d(TAG, "Asset loading already in progress, skipping")
             return
         }
 
         Thread {
             isPreGenerating = true
-            Log.d(TAG, "Starting pre-generation of common deposit amounts")
-            var generated = 0
+            var copied = 0
             var skipped = 0
 
             try {
-                for (amount in 1000..20000 step 1000) {
+                for (amount in 500..50000 step 500) {
                     val formattedAmount = formatAmountForSpeech(amount.toLong())
                     val message = "띵동. $formattedAmount"
                     val cacheFile = File(cacheDir, getCacheKey(message))
@@ -332,22 +253,22 @@ class CloudTTSManager(private val context: Context) {
                         continue
                     }
 
-                    val pcmData = synthesizeAndCache(message)
-                    if (pcmData != null) {
-                        generated++
-                        Log.d(TAG, "Pre-generated: $message ($generated/20)")
-                    } else {
-                        Log.e(TAG, "Failed to pre-generate: $message")
+                    try {
+                        context.assets.open("tts_pregenerated/$amount.pcm").use { input ->
+                            FileOutputStream(cacheFile).use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        copied++
+                    } catch (e: Exception) {
+                        // Asset not found for this amount, skip silently
                     }
-
-                    // Small delay to avoid API rate limiting
-                    Thread.sleep(500)
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Error during pre-generation", e)
+                Log.e(TAG, "Error loading pre-generated assets", e)
             } finally {
                 isPreGenerating = false
-                Log.d(TAG, "Pre-generation complete: $generated generated, $skipped already cached")
+                Log.d(TAG, "Asset loading complete: $copied copied, $skipped already cached")
             }
         }.start()
     }

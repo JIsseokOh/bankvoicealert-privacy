@@ -36,7 +36,7 @@
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
             android:paddingTop="10dp"
-            android:paddingBottom="10dp"
+            android:paddingBottom="14dp"
             android:background="@drawable/card_bg_primary">
 
             <TextView
@@ -70,7 +70,7 @@
             <Button
                 android:id="@+id/permissionButton"
                 android:layout_width="wrap_content"
-                android:layout_height="38dp"
+                android:layout_height="44dp"
                 android:text="권한 설정"
                 android:layout_gravity="center"
                 android:layout_marginTop="4dp"
@@ -100,7 +100,7 @@
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
             android:paddingTop="10dp"
-            android:paddingBottom="10dp"
+            android:paddingBottom="14dp"
             android:background="@drawable/card_bg_primary">
 
             <TextView
@@ -134,7 +134,7 @@
             <Button
                 android:id="@+id/batteryOptimizationButton"
                 android:layout_width="wrap_content"
-                android:layout_height="38dp"
+                android:layout_height="44dp"
                 android:text="⚡ 상시 가동 모드 설정"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
@@ -256,43 +256,20 @@
         </androidx.cardview.widget.CardView>
     </LinearLayout>
 
-    <!-- 음성모드 + 테스트 (가로 배치) -->
-    <LinearLayout
+    <!-- 테스트 재생 -->
+    <Button
+        android:id="@+id/testButton"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:layout_marginTop="4dp">
-
-        <Button
-            android:id="@+id/ttsModeToggleButton"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="4dp"
-            android:text="반응속도↑ 발음↓"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:background="@drawable/btn_dark_bg"
-            app:backgroundTint="@null"
-            android:textColor="#FFFFFF"
-            android:stateListAnimator="@null"
-            android:letterSpacing="0.01"/>
-
-        <Button
-            android:id="@+id/testButton"
-            android:layout_width="0dp"
-            android:layout_height="56dp"
-            android:layout_weight="1"
-            android:layout_marginStart="4dp"
-            android:text="🔊 테스트 재생"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:background="@drawable/btn_dark_bg"
-            app:backgroundTint="@null"
-            android:textColor="#FFFFFF"
-            android:stateListAnimator="@null"
-            android:letterSpacing="0.01"/>
-    </LinearLayout>
+        android:layout_height="56dp"
+        android:layout_marginTop="4dp"
+        android:text="🔊 테스트 재생"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:background="@drawable/btn_dark_bg"
+        app:backgroundTint="@null"
+        android:textColor="#FFFFFF"
+        android:stateListAnimator="@null"
+        android:letterSpacing="0.01"/>
 
     <!-- 매출 집계 버튼 -->
     <Button

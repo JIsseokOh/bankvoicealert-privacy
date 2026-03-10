@@ -36,8 +36,6 @@ class BankNotificationService : NotificationListenerService() {
     override fun onCreate() {
         super.onCreate()
         ttsManager = TTSManager.getInstance(this)
-        ttsManager.useCloudTTS = getSharedPreferences("settings", MODE_PRIVATE)
-            .getBoolean("use_cloud_tts", false)
         depositDataManager = DepositDataManager.getInstance(this)
         updateChecker = UpdateChecker(this)
         isServiceActive = true
