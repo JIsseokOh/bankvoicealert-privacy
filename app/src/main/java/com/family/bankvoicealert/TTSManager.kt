@@ -65,6 +65,12 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private val speechQueue = ConcurrentLinkedQueue<SpeechItem>()
     private var cloudTTSManager: CloudTTSManager? = null
     var useCloudTTS: Boolean = false
+        set(value) {
+            field = value
+            if (value) {
+                getCloudTTSManager().preGenerateCommonAmounts()
+            }
+        }
 
     private var tts: TextToSpeech? = null
     private var audioFocusRequest: Any? = null

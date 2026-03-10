@@ -47,6 +47,8 @@ class CloudTTSManager(private val context: Context) {
     private var audioTrack: AudioTrack? = null
     private var isSpeaking = false
     private var audioFocusRequest: Any? = null
+    @Volatile
+    private var isPreGenerating = false
 
     data class CloudSpeechItem(
         val message: String,
@@ -300,6 +302,69 @@ class CloudTTSManager(private val context: Context) {
             audioFocusRequest = null
         } catch (e: Exception) {
             Log.e(TAG, "Error releasing audio focus", e)
+        }
+    }
+
+    /**
+     * Pre-generate TTS audio for common deposit amounts (1,000 ~ 20,000 won in 1,000 increments).
+     * Runs in background thread. Skips already-cached amounts.
+     */
+    fun preGenerateCommonAmounts() {
+        if (isPreGenerating) {
+            Log.d(TAG, "Pre-generation already in progress, skipping")
+            return
+        }
+
+        Thread {
+            isPreGenerating = true
+            Log.d(TAG, "Starting pre-generation of common deposit amounts")
+            var generated = 0
+            var skipped = 0
+
+            try {
+                for (amount in 1000..20000 step 1000) {
+                    val formattedAmount = formatAmountForSpeech(amount.toLong())
+                    val message = "띵동. $formattedAmount"
+                    val cacheFile = File(cacheDir, getCacheKey(message))
+
+                    if (cacheFile.exists()) {
+                        skipped++
+                        continue
+                    }
+
+                    val pcmData = synthesizeAndCache(message)
+                    if (pcmData != null) {
+                        generated++
+                        Log.d(TAG, "Pre-generated: $message ($generated/20)")
+                    } else {
+                        Log.e(TAG, "Failed to pre-generate: $message")
+                    }
+
+                    // Small delay to avoid API rate limiting
+                    Thread.sleep(500)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during pre-generation", e)
+            } finally {
+                isPreGenerating = false
+                Log.d(TAG, "Pre-generation complete: $generated generated, $skipped already cached")
+            }
+        }.start()
+    }
+
+    private fun formatAmountForSpeech(amountLong: Long): String {
+        return when {
+            amountLong >= 100_000_000 -> {
+                val eok = amountLong / 100_000_000
+                val man = (amountLong % 100_000_000) / 10_000
+                if (man > 0) "${eok}억 ${man}만원" else "${eok}억원"
+            }
+            amountLong >= 10_000 -> {
+                val man = amountLong / 10_000
+                val won = amountLong % 10_000
+                if (won > 0) "${man}만 ${won}원" else "${man}만원"
+            }
+            else -> "${amountLong}원"
         }
     }
 
