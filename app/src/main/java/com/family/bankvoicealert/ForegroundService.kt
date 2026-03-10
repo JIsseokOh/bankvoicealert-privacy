@@ -98,8 +98,24 @@ class ForegroundService : Service() {
     private var isServiceStarted = false
     private var serviceStartTime = 0L
 
-    private var autoStopHandler: Handler? = null
+    private val mainHandler = Handler(Looper.getMainLooper())
     private var autoStopRunnable: Runnable? = null
+
+    private val notificationUpdateRunnable = object : Runnable {
+        override fun run() {
+            if (isServiceStarted) {
+                try {
+                    val notificationManager = getSystemService(NotificationManager::class.java)
+                    notificationManager?.notify(NOTIFICATION_ID, createNotification())
+                    if (!isIgnoringBatteryOptimizations()) {
+                        mainHandler.postDelayed(this, TimeUnit.HOURS.toMillis(1))
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error updating notification", e)
+                }
+            }
+        }
+    }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -251,16 +267,15 @@ class ForegroundService : Service() {
         }
 
         autoStopRunnable?.let { runnable ->
-            autoStopHandler?.removeCallbacks(runnable)
+            mainHandler.removeCallbacks(runnable)
         }
 
-        autoStopHandler = Handler(Looper.getMainLooper())
         autoStopRunnable = Runnable {
             Log.d(TAG, "Auto-stopping service after 24 hours")
             stopServiceGracefully()
         }
 
-        autoStopHandler?.postDelayed(
+        mainHandler.postDelayed(
             autoStopRunnable!!,
             TimeUnit.HOURS.toMillis(SERVICE_DURATION_HOURS)
         )
@@ -269,20 +284,7 @@ class ForegroundService : Service() {
     }
 
     private fun updateNotificationPeriodically() {
-        Handler(Looper.getMainLooper()).postDelayed({
-            if (isServiceStarted) {
-                try {
-                    val notificationManager = getSystemService(NotificationManager::class.java)
-                    notificationManager?.notify(NOTIFICATION_ID, createNotification())
-
-                    if (!isIgnoringBatteryOptimizations()) {
-                        updateNotificationPeriodically()
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error updating notification", e)
-                }
-            }
-        }, TimeUnit.HOURS.toMillis(1))
+        mainHandler.postDelayed(notificationUpdateRunnable, TimeUnit.HOURS.toMillis(1))
     }
 
     private fun isIgnoringBatteryOptimizations(): Boolean {
@@ -310,7 +312,7 @@ class ForegroundService : Service() {
                 Log.e(TAG, "Error stopping foreground", e)
             }
 
-            Handler(Looper.getMainLooper()).postDelayed({
+            mainHandler.postDelayed({
                 try {
                     stopSelf()
                 } catch (e: Exception) {
@@ -330,10 +332,10 @@ class ForegroundService : Service() {
     private fun cancelAllHandlers() {
         try {
             autoStopRunnable?.let { runnable ->
-                autoStopHandler?.removeCallbacks(runnable)
+                mainHandler.removeCallbacks(runnable)
             }
+            mainHandler.removeCallbacks(notificationUpdateRunnable)
             autoStopRunnable = null
-            autoStopHandler = null
         } catch (e: Exception) {
             Log.e(TAG, "Error cancelling handlers", e)
         }
@@ -347,6 +349,7 @@ class ForegroundService : Service() {
             isServiceStarted = false
             cancelAllHandlers()
             cancelServiceProtection()
+            mainHandler.removeCallbacksAndMessages(null)
 
             try {
                 val notificationManager = getSystemService(NotificationManager::class.java)

@@ -23,6 +23,11 @@ import com.google.android.gms.ads.nativead.NativeAdView
 
 class AdManager(private val activity: Activity) {
 
+    companion object {
+        @Volatile
+        private var isAdMobInitialized = false
+    }
+
     private val BANNER_AD_ID = "ca-app-pub-8476619670449177/7746664082"
     private val ALERT_BANNER_AD_ID = "ca-app-pub-8476619670449177/3624863581"
     private val NATIVE_AD_ID = "ca-app-pub-8476619670449177/4134722132"
@@ -41,8 +46,11 @@ class AdManager(private val activity: Activity) {
                 .build()
             MobileAds.setRequestConfiguration(config)
         }
-        MobileAds.initialize(activity) { initializationStatus ->
-            Log.d("AdMob", "AdMob initialized - Using ${if (USE_TEST_ADS) "TEST" else "PRODUCTION"} ads")
+        if (!isAdMobInitialized) {
+            MobileAds.initialize(activity) { initializationStatus ->
+                isAdMobInitialized = true
+                Log.d("AdMob", "AdMob initialized - Using ${if (USE_TEST_ADS) "TEST" else "PRODUCTION"} ads")
+            }
         }
     }
 

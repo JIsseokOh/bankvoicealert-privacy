@@ -26,6 +26,7 @@ class DepositDataManager private constructor(context: Context) {
     }
 
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    @Volatile private var cachedDeposits: JSONArray? = null
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.KOREA)
     private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.KOREA)
     private val fullFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.KOREA)
@@ -68,7 +69,7 @@ class DepositDataManager private constructor(context: Context) {
             }
             deposits.put(newDeposit)
 
-            prefs.edit().putString(KEY_DEPOSITS, deposits.toString()).apply()
+            saveDeposits(deposits)
             Log.d(TAG, "Deposit added: ${record.amount}원 from ${record.sender}")
         } catch (e: Exception) {
             Log.e(TAG, "Error adding deposit", e)
@@ -156,7 +157,7 @@ class DepositDataManager private constructor(context: Context) {
             }
 
             if (deleted) {
-                prefs.edit().putString(KEY_DEPOSITS, newDeposits.toString()).apply()
+                saveDeposits(newDeposits)
             }
             return deleted
         } catch (e: Exception) {
@@ -169,13 +170,19 @@ class DepositDataManager private constructor(context: Context) {
      * 모든 입금 기록 가져오기 (JSON)
      */
     private fun getAllDepositsJson(): JSONArray {
+        cachedDeposits?.let { return it }
         return try {
             val json = prefs.getString(KEY_DEPOSITS, "[]") ?: "[]"
-            JSONArray(json)
+            JSONArray(json).also { cachedDeposits = it }
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing deposits JSON", e)
-            JSONArray()
+            JSONArray().also { cachedDeposits = it }
         }
+    }
+
+    private fun saveDeposits(deposits: JSONArray) {
+        cachedDeposits = deposits
+        prefs.edit().putString(KEY_DEPOSITS, deposits.toString()).apply()
     }
 
     /**

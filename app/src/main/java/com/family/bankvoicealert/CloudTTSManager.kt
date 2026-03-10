@@ -13,6 +13,8 @@ import android.util.Log
 import java.io.File
 import java.io.FileOutputStream
 import java.util.concurrent.ConcurrentLinkedQueue
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class CloudTTSManager(private val context: Context) {
 
@@ -26,6 +28,7 @@ class CloudTTSManager(private val context: Context) {
     private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     private val cacheDir = File(context.cacheDir, CACHE_DIR_NAME).apply { mkdirs() }
     private val speechQueue = ConcurrentLinkedQueue<CloudSpeechItem>()
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
 
     private var audioTrack: AudioTrack? = null
     private var isSpeaking = false
@@ -54,7 +57,7 @@ class CloudTTSManager(private val context: Context) {
         val item = speechQueue.poll() ?: return
         isSpeaking = true
 
-        Thread {
+        executor.execute {
             try {
                 val pcmData = getCachedAudio(item.message)
                 if (pcmData != null) {
@@ -69,7 +72,7 @@ class CloudTTSManager(private val context: Context) {
                 isSpeaking = false
                 processNextInQueue()
             }
-        }.start()
+        }
     }
 
     private fun getCachedAudio(text: String): ByteArray? {
@@ -237,7 +240,7 @@ class CloudTTSManager(private val context: Context) {
             return
         }
 
-        Thread {
+        executor.execute {
             isPreGenerating = true
             var copied = 0
             var skipped = 0
@@ -270,7 +273,7 @@ class CloudTTSManager(private val context: Context) {
                 isPreGenerating = false
                 Log.d(TAG, "Asset loading complete: $copied copied, $skipped already cached")
             }
-        }.start()
+        }
     }
 
     private fun formatAmountForSpeech(amountLong: Long): String {
@@ -293,5 +296,6 @@ class CloudTTSManager(private val context: Context) {
         audioTrack?.release()
         audioTrack = null
         releaseAudioFocus()
+        executor.shutdown()
     }
 }

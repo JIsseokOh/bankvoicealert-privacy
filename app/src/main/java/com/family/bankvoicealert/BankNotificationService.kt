@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -23,12 +24,24 @@ class BankNotificationService : NotificationListenerService() {
         private const val TAG = "BankNotificationService"
         private val VERSION_CHECK_INTERVAL = TimeUnit.HOURS.toMillis(1) // 1시간마다 체크
         private const val DEPOSIT_CHANNEL_ID = "deposit_alert"
+        private val AMOUNT_CHECK_PATTERN = Regex("[0-9,]+\\s?원(?![가-힣])")
+        private val AMOUNT_EXTRACT_PATTERN = Regex("([0-9,]+)\\s?원(?![가-힣])")
+        private val SENDER_PATTERNS = listOf(
+            Regex("([가-힣]{2,4})님?으?로?부터"),
+            Regex("([가-힣]{2,4})\\s*입금"),
+            Regex("입금\\s*([가-힣]{2,4})"),
+            Regex("([가-힣]{2,4})님")
+        )
     }
 
     private lateinit var ttsManager: TTSManager
     private lateinit var depositDataManager: DepositDataManager
     private lateinit var updateChecker: UpdateChecker
     private var isServiceActive = false
+    private var cachedBackgroundEnabled = false
+    private var cachedPopupAlertEnabled = true
+    private var settingsPrefs: SharedPreferences? = null
+    private var prefListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
 
     private var versionCheckHandler: Handler? = null
     private var versionCheckRunnable: Runnable? = null
@@ -40,6 +53,18 @@ class BankNotificationService : NotificationListenerService() {
         updateChecker = UpdateChecker(this)
         isServiceActive = true
         createDepositNotificationChannel()
+
+        settingsPrefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
+        cachedBackgroundEnabled = settingsPrefs!!.getBoolean("background_enabled", false)
+        cachedPopupAlertEnabled = settingsPrefs!!.getBoolean("popup_alert_enabled", true)
+        prefListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+            when (key) {
+                "background_enabled" -> cachedBackgroundEnabled = prefs.getBoolean(key, false)
+                "popup_alert_enabled" -> cachedPopupAlertEnabled = prefs.getBoolean(key, true)
+            }
+        }
+        settingsPrefs!!.registerOnSharedPreferenceChangeListener(prefListener)
+
         Log.d(TAG, "Service created")
 
         // 주기적 버전 체크 시작
@@ -169,7 +194,7 @@ class BankNotificationService : NotificationListenerService() {
         val lowerText = text.lowercase(Locale.ROOT)
         // "입금" 키워드와 금액 패턴 (xxx원) 확인
         if (!lowerText.contains("입금") ||
-            !Regex("[0-9,]+\\s?원(?![가-힣])").containsMatchIn(text)) {
+            !AMOUNT_CHECK_PATTERN.containsMatchIn(text)) {
             return false
         }
 
@@ -190,22 +215,14 @@ class BankNotificationService : NotificationListenerService() {
     }
 
     private fun extractAmount(text: String): String {
-        val regex = Regex("([0-9,]+)\\s?원(?![가-힣])")
-        val match = regex.find(text)
+        val match = AMOUNT_EXTRACT_PATTERN.find(text)
         return match?.groupValues?.get(1)?.replace(",", "") ?: ""
     }
 
     private fun extractSender(text: String): String {
         // 입금자 이름 추출 시도
         // 패턴 1: "홍길동님으로부터", "홍길동 입금"
-        val patterns = listOf(
-            Regex("([가-힣]{2,4})님?으?로?부터"),
-            Regex("([가-힣]{2,4})\\s*입금"),
-            Regex("입금\\s*([가-힣]{2,4})"),
-            Regex("([가-힣]{2,4})님")
-        )
-
-        for (pattern in patterns) {
+        for (pattern in SENDER_PATTERNS) {
             val match = pattern.find(text)
             if (match != null) {
                 val sender = match.groupValues[1]
@@ -311,15 +328,11 @@ class BankNotificationService : NotificationListenerService() {
     }
 
     private fun isPopupAlertEnabled(): Boolean {
-        val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
-        return prefs.getBoolean("popup_alert_enabled", true)
+        return cachedPopupAlertEnabled
     }
 
     private fun isBackgroundEnabled(): Boolean {
-        val prefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
-        val enabled = prefs.getBoolean("background_enabled", false)
-        Log.d(TAG, "Background enabled check: $enabled")
-        return enabled
+        return cachedBackgroundEnabled
     }
 
     private fun getUpdateTTSMessage(): String? {
@@ -336,6 +349,7 @@ class BankNotificationService : NotificationListenerService() {
         super.onDestroy()
         isServiceActive = false
         stopPeriodicVersionCheck()
+        settingsPrefs?.unregisterOnSharedPreferenceChangeListener(prefListener)
         Log.d(TAG, "Service destroyed")
     }
 }

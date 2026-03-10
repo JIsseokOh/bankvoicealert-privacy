@@ -68,6 +68,7 @@
         <activity
             android:name=".DepositAlertActivity"
             android:exported="false"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.DepositAlert"
             android:excludeFromRecents="true"
             android:taskAffinity=""

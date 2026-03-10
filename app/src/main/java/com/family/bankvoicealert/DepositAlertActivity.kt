@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.content.Intent
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -43,7 +44,6 @@ class DepositAlertActivity : AppCompatActivity() {
 
         // 최상위 표시 플래그
         window.addFlags(
-            WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON or
             WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
         )
 
@@ -64,7 +64,19 @@ class DepositAlertActivity : AppCompatActivity() {
         val adContainer = findViewById<LinearLayout>(R.id.alertAdContainer)
         adManager.loadAlertBannerAd(adContainer)
 
-        // Auto-dismiss after 10 minutes
+        // Auto-dismiss after 90 seconds
+        dismissHandler.postDelayed(dismissRunnable, DISMISS_DELAY_MS)
+    }
+
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        val amount = intent?.getStringExtra(EXTRA_AMOUNT) ?: ""
+        val tvAmount = findViewById<TextView>(R.id.tvDepositAmount)
+        tvAmount.text = "${amount} 입금되었습니다"
+
+        // Reset 90-second timer
+        dismissHandler.removeCallbacks(dismissRunnable)
         dismissHandler.postDelayed(dismissRunnable, DISMISS_DELAY_MS)
     }
 
