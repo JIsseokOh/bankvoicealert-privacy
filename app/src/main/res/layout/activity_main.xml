@@ -24,7 +24,7 @@
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
+        android:layout_marginBottom="6dp"
         app:cardBackgroundColor="@android:color/transparent"
         app:cardCornerRadius="16dp"
         app:cardElevation="8dp">
@@ -33,7 +33,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
             android:background="@drawable/card_bg_primary">
 
             <TextView
@@ -42,16 +45,16 @@
                 android:layout_height="wrap_content"
                 android:text="1번, 아래 버튼 누르기"
                 android:textColor="#ff0000"
-                android:textSize="24sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:padding="8dp"
+                android:padding="4dp"
                 android:letterSpacing="0.02"/>
 
             <Button
                 android:id="@+id/serviceToggleButton"
                 android:layout_width="220dp"
-                android:layout_height="54dp"
+                android:layout_height="48dp"
                 android:text="1번 버튼"
                 android:textSize="18sp"
                 android:textStyle="bold"
@@ -59,7 +62,7 @@
                 android:background="@drawable/btn_primary_bg"
                 app:backgroundTint="@null"
                 android:layout_gravity="center"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:stateListAnimator="@null"
                 android:elevation="4dp"
                 android:letterSpacing="0.05"/>
@@ -67,14 +70,14 @@
             <Button
                 android:id="@+id/permissionButton"
                 android:layout_width="wrap_content"
-                android:layout_height="42dp"
+                android:layout_height="38dp"
                 android:text="권한 설정"
                 android:layout_gravity="center"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:background="@drawable/btn_dark_bg"
                 app:backgroundTint="@null"
-                android:textColor="#C0C6D8"
-                android:textSize="14sp"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
                 android:stateListAnimator="@null"/>
@@ -85,7 +88,7 @@
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
+        android:layout_marginBottom="6dp"
         app:cardBackgroundColor="@android:color/transparent"
         app:cardCornerRadius="16dp"
         app:cardElevation="8dp">
@@ -94,7 +97,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
             android:background="@drawable/card_bg_primary">
 
             <TextView
@@ -103,16 +109,16 @@
                 android:layout_height="wrap_content"
                 android:text="2번, 아래 버튼 누르기"
                 android:textColor="#ff0000"
-                android:textSize="24sp"
+                android:textSize="20sp"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:padding="8dp"
+                android:padding="4dp"
                 android:letterSpacing="0.02"/>
 
             <Button
                 android:id="@+id/backgroundToggleButton"
                 android:layout_width="220dp"
-                android:layout_height="54dp"
+                android:layout_height="48dp"
                 android:text="2번 버튼"
                 android:textSize="18sp"
                 android:textStyle="bold"
@@ -120,7 +126,7 @@
                 android:background="@drawable/btn_primary_bg"
                 app:backgroundTint="@null"
                 android:layout_gravity="center"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:stateListAnimator="@null"
                 android:elevation="4dp"
                 android:letterSpacing="0.05"/>
@@ -128,14 +134,14 @@
             <Button
                 android:id="@+id/batteryOptimizationButton"
                 android:layout_width="wrap_content"
-                android:layout_height="42dp"
+                android:layout_height="38dp"
                 android:text="⚡ 상시 가동 모드 설정"
-                android:textColor="#C0C6D8"
-                android:textSize="14sp"
+                android:textColor="#FFFFFF"
+                android:textSize="16sp"
                 android:background="@drawable/btn_dark_bg"
                 app:backgroundTint="@null"
                 android:layout_gravity="center"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="6dp"
                 android:paddingStart="20dp"
                 android:paddingEnd="20dp"
                 android:stateListAnimator="@null"/>
@@ -170,8 +176,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="알림 볼륨"
-                    android:textColor="#8B92A8"
-                    android:textSize="14sp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
                     android:gravity="center"
                     android:letterSpacing="0.05"/>
 
@@ -220,8 +226,8 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:text="음성 속도"
-                    android:textColor="#8B92A8"
-                    android:textSize="14sp"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
                     android:gravity="center"
                     android:letterSpacing="0.05"/>
 
@@ -264,11 +270,11 @@
             android:layout_weight="1"
             android:layout_marginEnd="4dp"
             android:text="반응속도↑ 발음↓"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:background="@drawable/btn_dark_bg"
             app:backgroundTint="@null"
-            android:textColor="#C0C6D8"
+            android:textColor="#FFFFFF"
             android:stateListAnimator="@null"
             android:letterSpacing="0.01"/>
 
@@ -279,11 +285,11 @@
             android:layout_weight="1"
             android:layout_marginStart="4dp"
             android:text="🔊 테스트 재생"
-            android:textSize="14sp"
+            android:textSize="16sp"
             android:textStyle="bold"
             android:background="@drawable/btn_dark_bg"
             app:backgroundTint="@null"
-            android:textColor="#C0C6D8"
+            android:textColor="#FFFFFF"
             android:stateListAnimator="@null"
             android:letterSpacing="0.01"/>
     </LinearLayout>
@@ -314,7 +320,7 @@
         android:textStyle="bold"
         android:background="@drawable/btn_dark_bg"
         app:backgroundTint="@null"
-        android:textColor="#C0C6D8"
+        android:textColor="#FFFFFF"
         android:layout_marginTop="8dp"
         android:stateListAnimator="@null"
         android:elevation="6dp"
@@ -334,11 +340,11 @@
             android:layout_weight="1"
             android:layout_marginEnd="4dp"
             android:text="📖 사용방법"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:background="@drawable/btn_dark_bg"
             app:backgroundTint="@null"
-            android:textColor="#C0C6D8"
+            android:textColor="#FFFFFF"
             android:stateListAnimator="@null"
             android:letterSpacing="0.02"/>
 
@@ -349,11 +355,11 @@
             android:layout_weight="1"
             android:layout_marginStart="4dp"
             android:text="❓ 문의"
-            android:textSize="16sp"
+            android:textSize="18sp"
             android:textStyle="bold"
             android:background="@drawable/btn_dark_bg"
             app:backgroundTint="@null"
-            android:textColor="#C0C6D8"
+            android:textColor="#FFFFFF"
             android:stateListAnimator="@null"
             android:letterSpacing="0.02"/>
     </LinearLayout>

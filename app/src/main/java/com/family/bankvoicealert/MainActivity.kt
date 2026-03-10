@@ -363,7 +363,7 @@ class MainActivity : AppCompatActivity() {
     private fun updateTTSModeButton(useCloud: Boolean) {
         ttsModeToggleButton.backgroundTintList = null
         val greenColor = android.graphics.Color.parseColor("#00FF88")
-        val grayColor = android.graphics.Color.parseColor("#C0C6D8")
+        val grayColor = android.graphics.Color.parseColor("#FFFFFF")
 
         if (useCloud) {
             // 클라우드 모드: "반응속도  발음" - 발음만 초록색
@@ -528,7 +528,7 @@ class MainActivity : AppCompatActivity() {
         if (enabled) {
             popupToggleButton.text = "팝업 알림 켜짐"
             popupToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
-            popupToggleButton.setTextColor(android.graphics.Color.parseColor("#C0C6D8"))
+            popupToggleButton.setTextColor(android.graphics.Color.parseColor("#FFFFFF"))
         } else {
             popupToggleButton.text = "팝업 알림 꺼짐"
             popupToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
@@ -549,11 +549,11 @@ class MainActivity : AppCompatActivity() {
         if (isIgnoringBatteryOptimizations()) {
             batteryOptimizationButton.text = "✅ 상시 가동 모드 활성화됨"
             batteryOptimizationButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
-            batteryOptimizationButton.setTextColor(android.graphics.Color.parseColor("#C0C6D8"))
+            batteryOptimizationButton.setTextColor(android.graphics.Color.parseColor("#FFFFFF"))
         } else {
             batteryOptimizationButton.text = "⚡ 상시 가동 모드 설정"
             batteryOptimizationButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
-            batteryOptimizationButton.setTextColor(android.graphics.Color.parseColor("#C0C6D8"))
+            batteryOptimizationButton.setTextColor(android.graphics.Color.parseColor("#FFFFFF"))
         }
     }
 
