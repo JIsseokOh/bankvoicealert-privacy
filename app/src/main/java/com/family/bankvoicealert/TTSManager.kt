@@ -155,7 +155,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     }
 
     fun speakSimple(message: String, amount: String, suffix: String? = null) {
-        val baseMessage = "$message. ${formatAmount(amount)}"
+        val baseMessage = "$message. ${formatAmount(amount)} 확인"
         val fullMessage = if (suffix != null) "$baseMessage. $suffix" else baseMessage
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val volumePercent = prefs.getInt("volume_percent", 100)
@@ -184,7 +184,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     }
 
     fun speakDeposit(bank: String, amount: String) {
-        val fullMessage = "띵동. ${formatAmount(amount)}"
+        val fullMessage = "띵동. ${formatAmount(amount)} 확인"
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val volumePercent = prefs.getInt("volume_percent", 100)
 

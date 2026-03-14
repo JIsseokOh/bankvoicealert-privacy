@@ -248,7 +248,7 @@ class CloudTTSManager(private val context: Context) {
             try {
                 for (amount in 500..50000 step 500) {
                     val formattedAmount = formatAmountForSpeech(amount.toLong())
-                    val message = "띵동. $formattedAmount"
+                    val message = "띵동. $formattedAmount 확인"
                     val cacheFile = File(cacheDir, getCacheKey(message))
 
                     if (cacheFile.exists()) {
