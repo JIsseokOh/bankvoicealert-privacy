@@ -160,11 +160,13 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val volumePercent = prefs.getInt("volume_percent", 100)
 
+        val speechRate = prefs.getFloat("speech_rate", 1.0f)
+
         // Try pre-generated cache first (only for messages without suffix)
         val cloud = getCloudTTSManager()
         if (suffix == null && cloud.hasCachedAudio(fullMessage)) {
             Log.d(TAG, "Using pre-generated audio: $fullMessage")
-            cloud.speak(fullMessage, volumePercent)
+            cloud.speak(fullMessage, volumePercent, speechRate)
             return
         }
 
@@ -173,8 +175,6 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             Log.w(TAG, "TTS not initialized")
             return
         }
-
-        val speechRate = prefs.getFloat("speech_rate", 1.0f)
         speechQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
         Log.d(TAG, "Using local TTS: $fullMessage (queue size: ${speechQueue.size})")
 
@@ -188,11 +188,13 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         val volumePercent = prefs.getInt("volume_percent", 100)
 
+        val speechRate = prefs.getFloat("speech_rate", 1.0f)
+
         // Try pre-generated cache first
         val cloud = getCloudTTSManager()
         if (cloud.hasCachedAudio(fullMessage)) {
             Log.d(TAG, "Using pre-generated audio: $fullMessage")
-            cloud.speak(fullMessage, volumePercent)
+            cloud.speak(fullMessage, volumePercent, speechRate)
             return
         }
 
@@ -201,8 +203,6 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             Log.w(TAG, "TTS not initialized")
             return
         }
-
-        val speechRate = prefs.getFloat("speech_rate", 1.0f)
         speechQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
         Log.d(TAG, "Using local TTS: $fullMessage (queue size: ${speechQueue.size})")
 

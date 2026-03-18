@@ -6,6 +6,7 @@ import android.media.AudioFocusRequest
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
+import android.media.PlaybackParams
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -38,11 +39,12 @@ class CloudTTSManager(private val context: Context) {
 
     data class CloudSpeechItem(
         val message: String,
-        val volumePercent: Int
+        val volumePercent: Int,
+        val speechRate: Float = 1.0f
     )
 
-    fun speak(message: String, volumePercent: Int) {
-        speechQueue.offer(CloudSpeechItem(message, volumePercent))
+    fun speak(message: String, volumePercent: Int, speechRate: Float = 1.0f) {
+        speechQueue.offer(CloudSpeechItem(message, volumePercent, speechRate))
         if (!isSpeaking) {
             processNextInQueue()
         }
@@ -61,7 +63,7 @@ class CloudTTSManager(private val context: Context) {
             try {
                 val pcmData = getCachedAudio(item.message)
                 if (pcmData != null) {
-                    playPcmAudio(pcmData, item.volumePercent)
+                    playPcmAudio(pcmData, item.volumePercent, item.speechRate)
                 } else {
                     Log.w(TAG, "No cached audio for: ${item.message}")
                     isSpeaking = false
@@ -83,7 +85,7 @@ class CloudTTSManager(private val context: Context) {
         } else null
     }
 
-    private fun playPcmAudio(pcmData: ByteArray, volumePercent: Int) {
+    private fun playPcmAudio(pcmData: ByteArray, volumePercent: Int, speechRate: Float = 1.0f) {
         try {
             setVolume(volumePercent)
             requestAudioFocus()
@@ -129,6 +131,9 @@ class CloudTTSManager(private val context: Context) {
                     }
                     override fun onPeriodicNotification(track: AudioTrack?) {}
                 })
+                if (speechRate != 1.0f && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    playbackParams = PlaybackParams().setSpeed(speechRate)
+                }
                 play()
             }
         } catch (e: Exception) {
