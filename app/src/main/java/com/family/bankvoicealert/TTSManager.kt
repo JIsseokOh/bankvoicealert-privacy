@@ -69,6 +69,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private var audioFocusRequest: Any? = null
     private var isInitialized = false
     private var isSpeaking = false
+    private val pendingQueue = ConcurrentLinkedQueue<SpeechItem>()
 
     data class SpeechItem(
         val message: String,
@@ -98,6 +99,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         isInitialized = true
         setOptimalVoice()
         Log.d(TAG, "TTS initialized successfully")
+        processPendingQueue()
     }
 
     private fun setOptimalVoice() {
@@ -172,7 +174,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
         // Fallback to local TTS
         if (!isInitialized) {
-            Log.w(TAG, "TTS not initialized")
+            Log.w(TAG, "TTS not yet initialized, queuing for later: $fullMessage")
+            pendingQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
             return
         }
         speechQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
@@ -200,7 +203,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
         // Fallback to local TTS
         if (!isInitialized) {
-            Log.w(TAG, "TTS not initialized")
+            Log.w(TAG, "TTS not yet initialized, queuing for later: $fullMessage")
+            pendingQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
             return
         }
         speechQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
@@ -216,6 +220,17 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             cloudTTSManager = CloudTTSManager(context)
         }
         return cloudTTSManager!!
+    }
+
+    private fun processPendingQueue() {
+        while (pendingQueue.isNotEmpty()) {
+            val item = pendingQueue.poll() ?: break
+            speechQueue.offer(item)
+            Log.d(TAG, "Moved pending item to speech queue: ${item.message}")
+        }
+        if (!isSpeaking) {
+            processNextInQueue()
+        }
     }
 
     private fun processNextInQueue() {

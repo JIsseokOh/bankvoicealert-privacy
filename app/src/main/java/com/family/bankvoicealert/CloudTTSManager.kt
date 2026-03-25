@@ -23,13 +23,16 @@ class CloudTTSManager(private val context: Context) {
         private const val TAG = "CloudTTSManager"
         private const val CACHE_DIR_NAME = "tts_cache"
         private const val SAMPLE_RATE = 24000
+        private const val PREFS_NAME = "cloud_tts_prefs"
+        private const val KEY_CACHED_VERSION = "cached_version_code"
     }
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     private val cacheDir = File(context.cacheDir, CACHE_DIR_NAME).apply { mkdirs() }
     private val speechQueue = ConcurrentLinkedQueue<CloudSpeechItem>()
-    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val speechExecutor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val loadingExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
     private var audioTrack: AudioTrack? = null
     private var isSpeaking = false
@@ -59,7 +62,7 @@ class CloudTTSManager(private val context: Context) {
         val item = speechQueue.poll() ?: return
         isSpeaking = true
 
-        executor.execute {
+        speechExecutor.execute {
             try {
                 val pcmData = getCachedAudio(item.message)
                 if (pcmData != null) {
@@ -245,12 +248,21 @@ class CloudTTSManager(private val context: Context) {
             return
         }
 
-        executor.execute {
+        loadingExecutor.execute {
             isPreGenerating = true
             var copied = 0
             var skipped = 0
 
             try {
+                val currentVersionCode = getCurrentVersionCode()
+                val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+                val cachedVersion = prefs.getInt(KEY_CACHED_VERSION, -1)
+
+                if (cachedVersion != currentVersionCode) {
+                    clearCache()
+                    Log.d(TAG, "Cache invalidated: version $cachedVersion -> $currentVersionCode")
+                }
+
                 for (amount in 500..50000 step 500) {
                     val formattedAmount = formatAmountForSpeech(amount.toLong())
                     val message = "띵동. $formattedAmount 확인"
@@ -272,11 +284,35 @@ class CloudTTSManager(private val context: Context) {
                         // Asset not found for this amount, skip silently
                     }
                 }
+
+                prefs.edit().putInt(KEY_CACHED_VERSION, currentVersionCode).apply()
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading pre-generated assets", e)
             } finally {
                 isPreGenerating = false
                 Log.d(TAG, "Asset loading complete: $copied copied, $skipped already cached")
+            }
+        }
+    }
+
+    private fun getCurrentVersionCode(): Int {
+        return try {
+            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                packageInfo.longVersionCode.toInt()
+            } else {
+                @Suppress("DEPRECATION")
+                packageInfo.versionCode
+            }
+        } catch (e: Exception) {
+            -1
+        }
+    }
+
+    private fun clearCache() {
+        cacheDir.listFiles()?.forEach { file ->
+            if (file.name.startsWith("gemini_tts_")) {
+                file.delete()
             }
         }
     }
@@ -301,6 +337,7 @@ class CloudTTSManager(private val context: Context) {
         audioTrack?.release()
         audioTrack = null
         releaseAudioFocus()
-        executor.shutdown()
+        speechExecutor.shutdown()
+        loadingExecutor.shutdown()
     }
 }
