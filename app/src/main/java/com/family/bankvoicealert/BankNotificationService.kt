@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -45,6 +46,25 @@ class BankNotificationService : NotificationListenerService() {
 
     private var versionCheckHandler: Handler? = null
     private var versionCheckRunnable: Runnable? = null
+
+    override fun onListenerConnected() {
+        super.onListenerConnected()
+        isServiceActive = true
+        Log.d(TAG, "NotificationListener connected")
+    }
+
+    override fun onListenerDisconnected() {
+        super.onListenerDisconnected()
+        isServiceActive = false
+        Log.w(TAG, "NotificationListener disconnected, requesting rebind")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                requestRebind(ComponentName(applicationContext, BankNotificationService::class.java))
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to request rebind", e)
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
