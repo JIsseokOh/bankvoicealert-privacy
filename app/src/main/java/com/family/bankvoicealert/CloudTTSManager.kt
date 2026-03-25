@@ -39,6 +39,9 @@ class CloudTTSManager(private val context: Context) {
     private var audioFocusRequest: Any? = null
     @Volatile
     private var isPreGenerating = false
+    @Volatile
+    var isAssetsReady = false
+        private set
 
     data class CloudSpeechItem(
         val message: String,
@@ -286,11 +289,12 @@ class CloudTTSManager(private val context: Context) {
                 }
 
                 prefs.edit().putInt(KEY_CACHED_VERSION, currentVersionCode).apply()
+                isAssetsReady = true
             } catch (e: Exception) {
                 Log.e(TAG, "Error loading pre-generated assets", e)
             } finally {
                 isPreGenerating = false
-                Log.d(TAG, "Asset loading complete: $copied copied, $skipped already cached")
+                Log.d(TAG, "Asset loading complete: $copied copied, $skipped already cached, ready=$isAssetsReady")
             }
         }
     }

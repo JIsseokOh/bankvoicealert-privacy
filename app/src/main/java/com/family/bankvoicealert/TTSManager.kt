@@ -164,15 +164,15 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
         val speechRate = prefs.getFloat("speech_rate", 1.0f)
 
-        // Try pre-generated cache first (only for messages without suffix)
+        // Use pre-generated audio only when assets are fully loaded
         val cloud = getCloudTTSManager()
-        if (suffix == null && cloud.hasCachedAudio(fullMessage)) {
+        if (suffix == null && cloud.isAssetsReady && cloud.hasCachedAudio(fullMessage)) {
             Log.d(TAG, "Using pre-generated audio: $fullMessage")
             cloud.speak(fullMessage, volumePercent, speechRate)
             return
         }
 
-        // Fallback to local TTS
+        // Local TTS (immediate fallback while assets loading, or for non-cached amounts)
         if (!isInitialized) {
             Log.w(TAG, "TTS not yet initialized, queuing for later: $fullMessage")
             pendingQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
@@ -193,15 +193,15 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
         val speechRate = prefs.getFloat("speech_rate", 1.0f)
 
-        // Try pre-generated cache first
+        // Use pre-generated audio only when assets are fully loaded
         val cloud = getCloudTTSManager()
-        if (cloud.hasCachedAudio(fullMessage)) {
+        if (cloud.isAssetsReady && cloud.hasCachedAudio(fullMessage)) {
             Log.d(TAG, "Using pre-generated audio: $fullMessage")
             cloud.speak(fullMessage, volumePercent, speechRate)
             return
         }
 
-        // Fallback to local TTS
+        // Local TTS (immediate fallback while assets loading, or for non-cached amounts)
         if (!isInitialized) {
             Log.w(TAG, "TTS not yet initialized, queuing for later: $fullMessage")
             pendingQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
