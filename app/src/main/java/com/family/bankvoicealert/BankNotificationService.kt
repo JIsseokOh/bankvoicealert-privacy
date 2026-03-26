@@ -213,7 +213,7 @@ class BankNotificationService : NotificationListenerService() {
     private fun isDepositNotification(text: String): Boolean {
         val lowerText = text.lowercase(Locale.ROOT)
         // "입금" 키워드와 금액 패턴 (xxx원) 확인 - 앞뒤로 공백(또는 문자열 경계)이 있을 때만 매칭
-        if (!Regex("(^|\\s)입금(\\s|$)").containsMatchIn(lowerText) ||
+        if (!Regex("(^|\\s|[0-9]\\s?원\\s?)입금(\\s|$|\\s?[0-9])").containsMatchIn(lowerText) ||
             !AMOUNT_CHECK_PATTERN.containsMatchIn(text)) {
             return false
         }
