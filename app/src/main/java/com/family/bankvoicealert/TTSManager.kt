@@ -69,7 +69,22 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private var audioFocusRequest: Any? = null
     private var isInitialized = false
     private var isSpeaking = false
+    private var speakingStartTime = 0L
     private val pendingQueue = ConcurrentLinkedQueue<SpeechItem>()
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val speakingWatchdog = Runnable {
+        if (isSpeaking && speakingStartTime > 0) {
+            val elapsed = System.currentTimeMillis() - speakingStartTime
+            if (elapsed > 10_000) {
+                Log.w(TAG, "Speaking watchdog: stuck for ${elapsed}ms, resetting")
+                restoreVolume()
+                releaseAudioFocus()
+                isSpeaking = false
+                speakingStartTime = 0
+                processNextInQueue()
+            }
+        }
+    }
 
     data class SpeechItem(
         val message: String,
@@ -84,22 +99,42 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         getCloudTTSManager().loadPreGeneratedAssets()
     }
 
+    private var initRetryCount = 0
+    private val MAX_INIT_RETRIES = 3
+
     override fun onInit(status: Int) {
         if (status != TextToSpeech.SUCCESS) {
-            Log.e(TAG, "TTS initialization failed")
+            Log.e(TAG, "TTS initialization failed (attempt ${initRetryCount + 1})")
+            retryInit()
             return
         }
 
         val result = tts?.setLanguage(Locale.KOREAN)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Log.e(TAG, "Korean language not supported")
+            Log.e(TAG, "Korean language not supported (attempt ${initRetryCount + 1})")
+            retryInit()
             return
         }
 
+        initRetryCount = 0
         isInitialized = true
         setOptimalVoice()
         Log.d(TAG, "TTS initialized successfully")
         processPendingQueue()
+    }
+
+    private fun retryInit() {
+        if (initRetryCount < MAX_INIT_RETRIES) {
+            initRetryCount++
+            Log.d(TAG, "Retrying TTS init in 2s (attempt $initRetryCount/$MAX_INIT_RETRIES)")
+            mainHandler.postDelayed({
+                tts?.shutdown()
+                tts = TextToSpeech(context, this)
+                setupTTSListener()
+            }, 2000)
+        } else {
+            Log.e(TAG, "TTS init failed after $MAX_INIT_RETRIES attempts")
+        }
     }
 
     private fun setOptimalVoice() {
@@ -140,17 +175,21 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
             override fun onDone(utteranceId: String?) {
                 Log.d(TAG, "TTS completed: $utteranceId")
+                mainHandler.removeCallbacks(speakingWatchdog)
                 restoreVolume()
                 releaseAudioFocus()
                 isSpeaking = false
+                speakingStartTime = 0
                 processNextInQueue()
             }
 
             override fun onError(utteranceId: String?) {
                 Log.e(TAG, "TTS error: $utteranceId")
+                mainHandler.removeCallbacks(speakingWatchdog)
                 restoreVolume()
                 releaseAudioFocus()
                 isSpeaking = false
+                speakingStartTime = 0
                 processNextInQueue()
             }
         })
@@ -240,18 +279,27 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
         val item = speechQueue.poll() ?: return
         isSpeaking = true
+        speakingStartTime = System.currentTimeMillis()
+        mainHandler.postDelayed(speakingWatchdog, 10_000)
         speakNow(item)
     }
 
     private fun speakNow(item: SpeechItem) {
-        // 포그라운드 서비스(foregroundServiceType="mediaPlayback")가 이미 CPU를 유지하므로
-        // 별도의 wake lock이 필요하지 않습니다. TTS 엔진도 오디오 재생 중 CPU를 유지합니다.
+        val currentTts = tts
+        if (currentTts == null) {
+            Log.e(TAG, "TTS engine is null, skipping")
+            isSpeaking = false
+            speakingStartTime = 0
+            mainHandler.removeCallbacks(speakingWatchdog)
+            processNextInQueue()
+            return
+        }
 
         // 약간의 피치 변화를 주어 자연스러운 음성 생성
         val randomPitch = 0.8f + (Random.nextFloat() * 0.2f)
 
-        tts?.setSpeechRate(item.speechRate)
-        tts?.setPitch(randomPitch)
+        currentTts.setSpeechRate(item.speechRate)
+        currentTts.setPitch(randomPitch)
 
         setMaxVolume(item.volumePercent)
         requestAudioFocus()
@@ -261,9 +309,19 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
         }
 
-        tts?.speak(item.message, TextToSpeech.QUEUE_FLUSH, params, item.utteranceId)
-        vibrateWithIntensity(item.volumePercent)
+        val result = currentTts.speak(item.message, TextToSpeech.QUEUE_FLUSH, params, item.utteranceId)
+        if (result == TextToSpeech.ERROR) {
+            Log.e(TAG, "TTS speak returned ERROR for: ${item.message}")
+            restoreVolume()
+            releaseAudioFocus()
+            isSpeaking = false
+            speakingStartTime = 0
+            mainHandler.removeCallbacks(speakingWatchdog)
+            processNextInQueue()
+            return
+        }
 
+        vibrateWithIntensity(item.volumePercent)
         Log.d(TAG, "Speaking now: ${item.message} (rate: ${item.speechRate}, pitch: $randomPitch, volume: ${item.volumePercent}%)")
     }
 
