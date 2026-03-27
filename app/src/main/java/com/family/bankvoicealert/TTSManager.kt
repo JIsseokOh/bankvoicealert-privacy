@@ -67,8 +67,11 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
     private var tts: TextToSpeech? = null
     private var audioFocusRequest: Any? = null
+    @Volatile
     private var isInitialized = false
+    @Volatile
     private var isSpeaking = false
+    @Volatile
     private var speakingStartTime = 0L
     private val pendingQueue = ConcurrentLinkedQueue<SpeechItem>()
     private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())

@@ -35,8 +35,27 @@ class CloudTTSManager(private val context: Context) {
     private val loadingExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
     private var audioTrack: AudioTrack? = null
+    @Volatile
     private var isSpeaking = false
     private var audioFocusRequest: Any? = null
+    private val mainHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    @Volatile
+    private var speakingStartTime = 0L
+    private val speakingWatchdog = Runnable {
+        if (isSpeaking && speakingStartTime > 0) {
+            val elapsed = System.currentTimeMillis() - speakingStartTime
+            if (elapsed > 10_000) {
+                Log.w(TAG, "CloudTTS watchdog: stuck for ${elapsed}ms, resetting")
+                restoreVolume()
+                releaseAudioFocus()
+                audioTrack?.release()
+                audioTrack = null
+                isSpeaking = false
+                speakingStartTime = 0
+                processNextInQueue()
+            }
+        }
+    }
     @Volatile
     private var isPreGenerating = false
     @Volatile
@@ -64,6 +83,8 @@ class CloudTTSManager(private val context: Context) {
         if (speechQueue.isEmpty() || isSpeaking) return
         val item = speechQueue.poll() ?: return
         isSpeaking = true
+        speakingStartTime = System.currentTimeMillis()
+        mainHandler.postDelayed(speakingWatchdog, 10_000)
 
         speechExecutor.execute {
             try {
@@ -72,12 +93,16 @@ class CloudTTSManager(private val context: Context) {
                     playPcmAudio(pcmData, item.volumePercent, item.speechRate)
                 } else {
                     Log.w(TAG, "No cached audio for: ${item.message}")
+                    mainHandler.removeCallbacks(speakingWatchdog)
                     isSpeaking = false
+                    speakingStartTime = 0
                     processNextInQueue()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error in cloud TTS", e)
+                mainHandler.removeCallbacks(speakingWatchdog)
                 isSpeaking = false
+                speakingStartTime = 0
                 processNextInQueue()
             }
         }
@@ -128,11 +153,13 @@ class CloudTTSManager(private val context: Context) {
                 setNotificationMarkerPosition(pcmData.size / 2) // 16-bit = 2 bytes per sample
                 setPlaybackPositionUpdateListener(object : AudioTrack.OnPlaybackPositionUpdateListener {
                     override fun onMarkerReached(track: AudioTrack?) {
+                        mainHandler.removeCallbacks(speakingWatchdog)
                         restoreVolume()
                         releaseAudioFocus()
                         track?.release()
                         audioTrack = null
                         isSpeaking = false
+                        speakingStartTime = 0
                         processNextInQueue()
                     }
                     override fun onPeriodicNotification(track: AudioTrack?) {}
@@ -144,11 +171,13 @@ class CloudTTSManager(private val context: Context) {
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error playing PCM audio", e)
+            mainHandler.removeCallbacks(speakingWatchdog)
             restoreVolume()
             releaseAudioFocus()
             audioTrack?.release()
             audioTrack = null
             isSpeaking = false
+            speakingStartTime = 0
             processNextInQueue()
         }
     }
@@ -338,6 +367,7 @@ class CloudTTSManager(private val context: Context) {
     }
 
     fun shutdown() {
+        mainHandler.removeCallbacks(speakingWatchdog)
         audioTrack?.release()
         audioTrack = null
         releaseAudioFocus()
