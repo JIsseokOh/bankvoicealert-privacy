@@ -175,7 +175,6 @@ class MainActivity : AppCompatActivity() {
                 val speed = 0.5f + (progress / 20f)
                 speedText.text = "${String.format("%.1f", speed)}x"
                 prefs.edit().putFloat("speech_rate", speed).apply()
-                ttsManager.setSpeed(speed)
             }
             
             override fun onStartTrackingTouch(seekBar: SeekBar?) {}
@@ -348,7 +347,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun testVoiceAlert() {
-        ttsManager.speakDeposit("테스트", "10000")
+        ttsManager.speakSimple("띵동", "10000")
 
         // 팝업 알림이 켜져 있을 때만 표시
         if (prefs.getBoolean("popup_alert_enabled", true)) {

@@ -235,6 +235,15 @@ class BankNotificationService : NotificationListenerService() {
     }
 
     private fun extractAmount(text: String): String {
+        // 1순위: "입금" 바로 뒤 금액 (입금10,000원, 입금 10,000원)
+        Regex("입금\\s?([0-9,]+)\\s?원").find(text)?.let {
+            return it.groupValues[1].replace(",", "")
+        }
+        // 2순위: "입금" 바로 앞 금액 (10,000원 입금)
+        Regex("([0-9,]+)\\s?원\\s?입금").find(text)?.let {
+            return it.groupValues[1].replace(",", "")
+        }
+        // 3순위: 텍스트 내 첫 번째 금액 (폴백)
         val match = AMOUNT_EXTRACT_PATTERN.find(text)
         return match?.groupValues?.get(1)?.replace(",", "") ?: ""
     }
