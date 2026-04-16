@@ -39,6 +39,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private val context: Context = context
     private val audioManager: AudioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private val vibrator: Vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    private val bluetoothAudioManager: BluetoothAudioManager = BluetoothAudioManager.getInstance(context)
     private val speechQueue = ConcurrentLinkedQueue<SpeechItem>()
     private val pendingQueue = ConcurrentLinkedQueue<SpeechItem>()
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -189,12 +190,22 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         currentTts.setSpeechRate(item.speechRate)
         currentTts.setPitch(randomPitch)
 
-        setMaxVolume(item.volumePercent)
-        requestAudioFocus()
+        val btConnected = bluetoothAudioManager.isBluetoothAudioConnected()
+        val streamType = if (btConnected) AudioManager.STREAM_MUSIC else AudioManager.STREAM_ALARM
+
+        setMaxVolume(item.volumePercent, btConnected)
+        requestAudioFocus(btConnected)
+        applyAudioAttributes(currentTts, btConnected)
+
+        val ttsVolume = if (btConnected) {
+            (item.volumePercent / 100f).coerceIn(0.05f, 1.0f)
+        } else {
+            1.0f
+        }
 
         val params = Bundle().apply {
-            putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_ALARM)
-            putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
+            putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, streamType)
+            putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, ttsVolume)
         }
 
         val result = currentTts.speak(item.message, TextToSpeech.QUEUE_FLUSH, params, item.utteranceId)
@@ -206,6 +217,23 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         }
 
         vibrateWithIntensity(item.volumePercent)
+    }
+
+    private fun applyAudioAttributes(currentTts: TextToSpeech, btConnected: Boolean) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                val attrs = AudioAttributes.Builder()
+                    .setUsage(
+                        if (btConnected) AudioAttributes.USAGE_MEDIA
+                        else AudioAttributes.USAGE_ALARM
+                    )
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+                currentTts.setAudioAttributes(attrs)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error applying audio attributes", e)
+        }
     }
 
     private fun resetSpeakingState() {
@@ -235,20 +263,30 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         }
     }
 
-    private fun setMaxVolume(percent: Int) {
+    private fun setMaxVolume(percent: Int, btConnected: Boolean) {
         try {
             val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            val originalAlarm = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
-            val originalRing = audioManager.getStreamVolume(AudioManager.STREAM_RING)
-            prefs.edit()
-                .putInt("temp_original_alarm_vol", originalAlarm)
-                .putInt("temp_original_ring_vol", originalRing)
-                .apply()
 
-            val maxAlarm = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            audioManager.setStreamVolume(AudioManager.STREAM_ALARM, (maxAlarm * percent) / 100, 0)
-            val maxRing = audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)
-            audioManager.setStreamVolume(AudioManager.STREAM_RING, (maxRing * percent) / 100, 0)
+            if (btConnected) {
+                val originalMusic = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                prefs.edit()
+                    .putInt("temp_original_music_vol", originalMusic)
+                    .apply()
+                val maxMusic = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxMusic, 0)
+            } else {
+                val originalAlarm = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
+                val originalRing = audioManager.getStreamVolume(AudioManager.STREAM_RING)
+                prefs.edit()
+                    .putInt("temp_original_alarm_vol", originalAlarm)
+                    .putInt("temp_original_ring_vol", originalRing)
+                    .apply()
+
+                val maxAlarm = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+                audioManager.setStreamVolume(AudioManager.STREAM_ALARM, (maxAlarm * percent) / 100, 0)
+                val maxRing = audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)
+                audioManager.setStreamVolume(AudioManager.STREAM_RING, (maxRing * percent) / 100, 0)
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error setting volume", e)
         }
@@ -257,8 +295,12 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private fun restoreVolume() {
         try {
             val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+            val originalMusic = prefs.getInt("temp_original_music_vol", -1)
             val originalAlarm = prefs.getInt("temp_original_alarm_vol", -1)
             val originalRing = prefs.getInt("temp_original_ring_vol", -1)
+            if (originalMusic != -1) {
+                audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, originalMusic, 0)
+            }
             if (originalAlarm != -1) {
                 audioManager.setStreamVolume(AudioManager.STREAM_ALARM, originalAlarm, 0)
             }
@@ -266,6 +308,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
                 audioManager.setStreamVolume(AudioManager.STREAM_RING, originalRing, 0)
             }
             prefs.edit()
+                .remove("temp_original_music_vol")
                 .remove("temp_original_alarm_vol")
                 .remove("temp_original_ring_vol")
                 .apply()
@@ -288,11 +331,12 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         }
     }
 
-    private fun requestAudioFocus() {
+    private fun requestAudioFocus(btConnected: Boolean) {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val usage = if (btConnected) AudioAttributes.USAGE_MEDIA else AudioAttributes.USAGE_ALARM
                 val attrs = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setUsage(usage)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
                     .build()
                 val focusReq = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
@@ -304,8 +348,9 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
                 audioFocusRequest = focusReq
                 audioManager.requestAudioFocus(focusReq)
             } else {
+                val streamType = if (btConnected) AudioManager.STREAM_MUSIC else AudioManager.STREAM_ALARM
                 @Suppress("DEPRECATION")
-                audioManager.requestAudioFocus(null, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+                audioManager.requestAudioFocus(null, streamType, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error requesting audio focus", e)
