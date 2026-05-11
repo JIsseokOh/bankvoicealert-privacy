@@ -151,12 +151,31 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         val volumePercent = prefs.getInt("volume_percent", 100)
         val speechRate = prefs.getFloat("speech_rate", 1.0f)
 
+        val item = SpeechItem(fullMessage, speechRate, volumePercent)
+
         if (!isInitialized) {
-            pendingQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
+            pendingQueue.offer(item)
+            ensureReady()
             return
         }
-        speechQueue.offer(SpeechItem(fullMessage, speechRate, volumePercent))
+        speechQueue.offer(item)
         if (!isSpeaking) processNextInQueue()
+    }
+
+    fun ensureReady() {
+        if (isInitialized) return
+        mainHandler.post {
+            if (isInitialized) return@post
+            Log.d(TAG, "ensureReady: forcing TTS reinit")
+            initRetryCount = 0
+            try {
+                tts?.shutdown()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error shutting down stale TTS", e)
+            }
+            tts = TextToSpeech(context, this)
+            setupTTSListener()
+        }
     }
 
     private fun processPendingQueue() {
@@ -276,16 +295,12 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, maxMusic, 0)
             } else {
                 val originalAlarm = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
-                val originalRing = audioManager.getStreamVolume(AudioManager.STREAM_RING)
                 prefs.edit()
                     .putInt("temp_original_alarm_vol", originalAlarm)
-                    .putInt("temp_original_ring_vol", originalRing)
                     .apply()
 
                 val maxAlarm = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
                 audioManager.setStreamVolume(AudioManager.STREAM_ALARM, (maxAlarm * percent) / 100, 0)
-                val maxRing = audioManager.getStreamMaxVolume(AudioManager.STREAM_RING)
-                audioManager.setStreamVolume(AudioManager.STREAM_RING, (maxRing * percent) / 100, 0)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error setting volume", e)
@@ -297,15 +312,11 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
             val originalMusic = prefs.getInt("temp_original_music_vol", -1)
             val originalAlarm = prefs.getInt("temp_original_alarm_vol", -1)
-            val originalRing = prefs.getInt("temp_original_ring_vol", -1)
             if (originalMusic != -1) {
                 audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, originalMusic, 0)
             }
             if (originalAlarm != -1) {
                 audioManager.setStreamVolume(AudioManager.STREAM_ALARM, originalAlarm, 0)
-            }
-            if (originalRing != -1) {
-                audioManager.setStreamVolume(AudioManager.STREAM_RING, originalRing, 0)
             }
             prefs.edit()
                 .remove("temp_original_music_vol")

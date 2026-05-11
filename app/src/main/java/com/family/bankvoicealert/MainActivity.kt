@@ -347,6 +347,7 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun testVoiceAlert() {
+        ttsManager.ensureReady()
         ttsManager.speakSimple("띵동", "10000")
 
         // 팝업 알림이 켜져 있을 때만 표시
@@ -362,6 +363,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         adManager.resumeBannerAd()
         checkPermissions()
+        ttsManager.ensureReady()
 
         // 배터리 최적화 상태 업데이트
         updateBatteryOptimizationButton()
