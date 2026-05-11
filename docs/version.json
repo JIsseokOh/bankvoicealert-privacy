@@ -1,7 +1,7 @@
 {
-  "latestVersionCode": 105,
-  "latestVersionName": "1.3.74",
-  "minimumVersionCode": 104,
-  "updateMessage": "새로운 업데이트가 있습니다.\n\n주요 업데이트:\n- 블루투스 연결 시 블루투스 기기로만 음성 출력\n- 블루투스 출력 시에도 앱 내 볼륨 슬라이더로 음량 조절\n\n업데이트를 권장합니다.",
+  "latestVersionCode": 106,
+  "latestVersionName": "1.3.75",
+  "minimumVersionCode": 106,
+  "updateMessage": "새로운 업데이트가 있습니다.\n\n주요 업데이트:\n- 음성 알림이 갑자기 들리지 않던 문제 자동 복구\n- 일부 기기에서 발생하던 무음 현상 수정\n\n업데이트를 권장합니다.",
   "playStoreUrl": "https://play.google.com/store/apps/details?id=com.family.bankvoicealert"
 }
