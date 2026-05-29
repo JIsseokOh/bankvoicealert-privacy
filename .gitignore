@@ -63,3 +63,12 @@ _ul-*
 *.bak
 *.swp
 *~
+
+# Pre-generated TTS assets (proprietary)
+app/src/main/assets/tts_pregenerated/
+
+# Keystore generation helper (contains alias details)
+generate_keystore.bat
+
+# Build logs
+*.log
