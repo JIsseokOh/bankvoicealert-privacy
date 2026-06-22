@@ -218,13 +218,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         supportButton.setOnClickListener {
-            // 카카오톡 오픈채팅으로 연결
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.kakao.com/o/sxro90Th"))
-            try {
-                startActivity(intent)
-            } catch (e: Exception) {
-                Toast.makeText(this, "카카오톡 오픈채팅을 열 수 없습니다", Toast.LENGTH_SHORT).show()
-            }
+            sendDiagnosticsAndOpenSupport()
         }
 
         permissionButton.setOnClickListener {
@@ -357,6 +351,92 @@ class MainActivity : AppCompatActivity() {
             }
             startActivity(intent)
         }
+    }
+
+    /**
+     * 문의 버튼: 기기 진단 정보를 클립보드에 복사하고 안내한 뒤,
+     * 기존 동작인 카카오톡 오픈채팅을 이어서 연다.
+     */
+    private fun sendDiagnosticsAndOpenSupport() {
+        val diagnostics = collectDiagnostics()
+
+        try {
+            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("진단정보", diagnostics))
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Failed to copy diagnostics", e)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("문의하기")
+            .setMessage("문의에 도움이 되는 기기 진단 정보가 복사되었습니다.\n\n카카오톡 채팅창을 길게 눌러 '붙여넣기' 한 뒤 보내주시면 더 빠르게 도와드릴 수 있어요.")
+            .setPositiveButton("카카오톡 열기") { _, _ -> openSupportChat() }
+            .setNegativeButton("취소", null)
+            .show()
+    }
+
+    private fun openSupportChat() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://open.kakao.com/o/sxro90Th"))
+        try {
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "카카오톡 오픈채팅을 열 수 없습니다", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * 팝업·소리가 안 될 때 원인 파악에 필요한 기기 환경 정보를 모은다.
+     * 민감정보(거래 내역/금액 등)는 포함하지 않는다.
+     */
+    private fun collectDiagnostics(): String {
+        val sb = StringBuilder()
+        val now = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
+            .format(java.util.Date())
+
+        sb.appendLine("===== 기기 진단 정보 =====")
+        sb.appendLine("(이 내용을 그대로 붙여넣어 보내주세요)")
+        sb.appendLine("진단시각: $now")
+        sb.appendLine()
+
+        val versionName = try {
+            packageManager.getPackageInfo(packageName, 0).versionName
+        } catch (e: Exception) { "?" }
+        sb.appendLine("[앱/기기]")
+        sb.appendLine("앱 버전: $versionName")
+        sb.appendLine("기기: ${Build.MANUFACTURER} ${Build.MODEL}")
+        sb.appendLine("안드로이드: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
+        sb.appendLine()
+
+        sb.appendLine("[소리]")
+        sb.appendLine(ttsManager.getSoundDiagnostics())
+        sb.appendLine()
+
+        sb.appendLine("[팝업/권한]")
+        val overlay = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) Settings.canDrawOverlays(this) else true
+        sb.appendLine("팝업표시 권한(오버레이): ${if (overlay) "허용" else "거부 ⚠️"}")
+        sb.appendLine("알림접근 권한: ${if (isNotificationServiceEnabled()) "허용" else "거부 ⚠️"}")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val notif = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
+                PackageManager.PERMISSION_GRANTED
+            sb.appendLine("알림표시 권한: ${if (notif) "허용" else "거부 ⚠️"}")
+        }
+        sb.appendLine("팝업알림 설정: ${if (prefs.getBoolean("popup_alert_enabled", true)) "켜짐" else "꺼짐"}")
+        sb.appendLine()
+
+        sb.appendLine("[전원/백그라운드]")
+        sb.appendLine("배터리최적화 제외: ${if (isIgnoringBatteryOptimizations()) "예" else "아니오 ⚠️"}")
+        val powerSave = try {
+            (getSystemService(Context.POWER_SERVICE) as PowerManager).isPowerSaveMode
+        } catch (e: Exception) { false }
+        sb.appendLine("절전모드: ${if (powerSave) "켜짐 ⚠️" else "꺼짐"}")
+        val batteryPct = try {
+            (getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager)
+                .getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
+        } catch (e: Exception) { -1 }
+        sb.appendLine("배터리: ${if (batteryPct in 0..100) "$batteryPct%" else "?"}")
+        sb.appendLine("백그라운드 실행중: ${if (isServiceRunning(ForegroundService::class.java)) "예" else "아니오 ⚠️"}")
+
+        return sb.toString().trimEnd()
     }
     
     override fun onResume() {

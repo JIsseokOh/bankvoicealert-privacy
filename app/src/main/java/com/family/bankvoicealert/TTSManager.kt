@@ -1,5 +1,6 @@
 package com.family.bankvoicealert
 
+import android.app.NotificationManager
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -395,5 +396,70 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         synchronized(Companion) {
             INSTANCE = null
         }
+    }
+
+    /**
+     * 음성 출력(소리)이 안 될 때 원인 파악에 필요한 환경 정보를 수집한다.
+     * 문의 시 사용자가 복사해 보내는 용도이며, 거래 내역 등 민감정보는 포함하지 않는다.
+     */
+    fun getSoundDiagnostics(): String {
+        val sb = StringBuilder()
+        val currentTts = tts
+
+        sb.appendLine("TTS 준비: ${if (isInitialized) "성공" else "실패/대기중 ⚠️"}")
+
+        val engine = try { currentTts?.defaultEngine ?: "알 수 없음" } catch (e: Exception) { "조회실패" }
+        sb.appendLine("기본 엔진: $engine")
+
+        val langStatus = try {
+            when (currentTts?.isLanguageAvailable(Locale.KOREAN)) {
+                TextToSpeech.LANG_AVAILABLE,
+                TextToSpeech.LANG_COUNTRY_AVAILABLE,
+                TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> "사용가능"
+                TextToSpeech.LANG_MISSING_DATA -> "데이터 없음 ⚠️"
+                TextToSpeech.LANG_NOT_SUPPORTED -> "미지원 ⚠️"
+                else -> "알 수 없음 ⚠️"
+            }
+        } catch (e: Exception) { "조회실패" }
+        sb.appendLine("한국어 음성: $langStatus")
+
+        val voiceInfo = try {
+            val v = currentTts?.voice
+            if (v != null) "${v.name} (네트워크필요=${v.isNetworkConnectionRequired})" else "없음 ⚠️"
+        } catch (e: Exception) { "조회실패" }
+        sb.appendLine("선택 음성: $voiceInfo")
+
+        try {
+            val alarmCur = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
+            val alarmMax = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
+            val musicCur = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+            val musicMax = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            sb.appendLine("알람 볼륨: $alarmCur/$alarmMax${if (alarmCur == 0) " ⚠️" else ""}")
+            sb.appendLine("미디어 볼륨: $musicCur/$musicMax")
+        } catch (e: Exception) {
+            sb.appendLine("볼륨: 조회실패")
+        }
+
+        val bt = try { bluetoothAudioManager.isBluetoothAudioConnected() } catch (e: Exception) { false }
+        sb.appendLine("블루투스 오디오: ${if (bt) "연결됨 ⚠️" else "없음"}")
+
+        val dnd = try {
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            when (nm.currentInterruptionFilter) {
+                NotificationManager.INTERRUPTION_FILTER_ALL -> "꺼짐"
+                NotificationManager.INTERRUPTION_FILTER_PRIORITY -> "우선순위만 ⚠️"
+                NotificationManager.INTERRUPTION_FILTER_NONE -> "전체차단 ⚠️"
+                NotificationManager.INTERRUPTION_FILTER_ALARMS -> "알람만 ⚠️"
+                else -> "알 수 없음"
+            }
+        } catch (e: Exception) { "조회실패" }
+        sb.appendLine("방해금지(DND): $dnd")
+
+        try {
+            val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+            sb.appendLine("앱 볼륨설정: ${prefs.getInt("volume_percent", 100)}% / 속도 ${prefs.getFloat("speech_rate", 1.0f)}")
+        } catch (e: Exception) {}
+
+        return sb.toString().trimEnd()
     }
 }
