@@ -11,6 +11,7 @@ import android.content.res.Configuration
 import android.media.AudioManager
 import android.os.Bundle
 import android.provider.Settings
+import android.speech.tts.TextToSpeech
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import android.Manifest
@@ -75,6 +76,8 @@ class MainActivity : AppCompatActivity() {
         migratePreferences()
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         ttsManager = TTSManager.getInstance(this)
+        // 자동 엔진 폴백으로도 한국어 음성을 못 쓰면 설치/설정 안내 다이얼로그를 띄운다.
+        ttsManager.onKoreanUnavailable = { needsData -> showKoreanTtsSetupDialog(needsData) }
         adManager = AdManager(this)
         updateChecker = UpdateChecker(this)
         depositDataManager = DepositDataManager.getInstance(this)
@@ -726,10 +729,92 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         adManager.destroyBannerAd()
-        // 싱글톤이므로 shutdown 호출하지 않음
-        // ttsManager.shutdown()
+        // Activity 누수 방지를 위해 콜백만 해제 (싱글톤이므로 shutdown은 호출하지 않음)
+        ttsManager.onKoreanUnavailable = null
     }
 
+
+    private var ttsSetupDialogShown = false
+
+    /**
+     * 자동 엔진 폴백으로도 한국어 음성을 쓸 수 없을 때, 사용자를 음성 설치/설정 화면으로 안내한다.
+     * - needsData=true  : 엔진은 있으나 한국어 음성 데이터만 없음 → 데이터 설치 화면
+     * - 구글 TTS 미설치  : Play 스토어의 'Google 음성 서비스'로 안내
+     * - 그 외           : 시스템 음성(TTS) 설정 화면으로 안내
+     * 세션당 한 번만 표시한다.
+     */
+    private fun showKoreanTtsSetupDialog(needsData: Boolean) {
+        if (isFinishing || isDestroyed || ttsSetupDialogShown) return
+        ttsSetupDialogShown = true
+
+        val googleInstalled = isPackageInstalled("com.google.android.tts")
+        val message: String
+        val action: () -> Unit
+
+        when {
+            needsData -> {
+                message = "음성 안내를 들으려면 한국어 음성 데이터 설치가 필요합니다.\n설치 화면으로 이동할까요?"
+                action = {
+                    try {
+                        startActivity(Intent(TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA))
+                    } catch (e: Exception) {
+                        openTtsSettings()
+                    }
+                }
+            }
+            !googleInstalled -> {
+                message = "음성 안내를 들으려면 'Google 음성 서비스' 설치가 필요합니다.\n설치 화면으로 이동할까요?"
+                action = { openPlayStore("com.google.android.tts") }
+            }
+            else -> {
+                message = "음성 안내에 사용할 한국어 음성을 찾을 수 없습니다.\n음성 설정 화면으로 이동할까요?"
+                action = { openTtsSettings() }
+            }
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("음성 안내 설정 필요")
+            .setMessage(message)
+            .setPositiveButton("설정으로 이동") { _, _ -> action() }
+            .setNegativeButton("나중에", null)
+            .show()
+    }
+
+    private fun isPackageInstalled(pkg: String): Boolean {
+        return try {
+            packageManager.getPackageInfo(pkg, 0)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun openTtsSettings() {
+        try {
+            startActivity(Intent("com.android.settings.TTS_SETTINGS").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            })
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                Toast.makeText(this, "접근성 > 텍스트 음성 변환에서 한국어 음성을 설정해 주세요", Toast.LENGTH_LONG).show()
+            } catch (e2: Exception) {
+                Toast.makeText(this, "설정 > 텍스트 음성 변환에서 한국어 음성을 설정해 주세요", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun openPlayStore(pkg: String) {
+        try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$pkg")))
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=$pkg")))
+            } catch (e2: Exception) {
+                Toast.makeText(this, "Play 스토어에서 'Google 음성 서비스'를 설치해 주세요", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
 
     private fun showExitDialog() {
         AlertDialog.Builder(this)

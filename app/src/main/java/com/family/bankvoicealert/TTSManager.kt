@@ -26,6 +26,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         private const val WATCHDOG_TIMEOUT_MS = 10_000L
         private const val MAX_INIT_RETRIES = 3
         private const val INIT_RETRY_DELAY_MS = 2_000L
+        private const val GOOGLE_TTS_PACKAGE = "com.google.android.tts"
 
         @Volatile
         private var INSTANCE: TTSManager? = null
@@ -51,6 +52,25 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     @Volatile private var isSpeaking = false
     @Volatile private var speakingStartTime = 0L
     private var initRetryCount = 0
+    @Volatile private var triedGoogleFallback = false
+    @Volatile private var koreanUnavailable = false
+    @Volatile private var koreanNeedsData = false
+    private var notifiedUnavailable = false
+
+    /**
+     * 자동 엔진 폴백(구글 TTS 전환)으로도 한국어 음성을 쓸 수 없을 때 한 번만 호출된다.
+     * needsData=true 면 한국어 음성 데이터만 없는 상태, false 면 한국어 지원 엔진 자체가 없는 상태.
+     * 콜백 등록 시점에 이미 사용 불가가 확정돼 있으면 즉시 통지한다.
+     */
+    var onKoreanUnavailable: ((needsData: Boolean) -> Unit)? = null
+        set(value) {
+            field = value
+            if (value != null && koreanUnavailable && !notifiedUnavailable) {
+                notifiedUnavailable = true
+                val needsData = koreanNeedsData
+                mainHandler.post { value.invoke(needsData) }
+            }
+        }
 
     private val speakingWatchdog = Runnable {
         if (isSpeaking && speakingStartTime > 0) {
@@ -84,15 +104,25 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
         val result = tts?.setLanguage(Locale.KOREAN)
         if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-            Log.e(TAG, "Korean not supported (attempt ${initRetryCount + 1})")
-            retryInit()
+            Log.e(TAG, "Korean unavailable on engine ${currentEngineName()} (result=$result)")
+            // 기본 엔진(예: 삼성 SMT)이 한국어를 못 하면, 설치돼 있는 구글 TTS 엔진으로 한 번 전환해 본다.
+            if (!triedGoogleFallback && currentEngineName() != GOOGLE_TTS_PACKAGE && isGoogleTtsInstalled()) {
+                triedGoogleFallback = true
+                switchToGoogleEngine()
+                return
+            }
+            // 폴백할 구글 엔진이 없거나, 구글로도 실패 → 한국어 사용 불가 확정 후 1회 통지
+            koreanNeedsData = (result == TextToSpeech.LANG_MISSING_DATA)
+            koreanUnavailable = true
+            notifyKoreanUnavailable()
             return
         }
 
         initRetryCount = 0
         isInitialized = true
+        koreanUnavailable = false
         setOptimalVoice()
-        Log.d(TAG, "TTS initialized successfully")
+        Log.d(TAG, "TTS initialized successfully on ${currentEngineName()}")
         processPendingQueue()
     }
 
@@ -107,6 +137,39 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         } else {
             Log.e(TAG, "TTS init failed after $MAX_INIT_RETRIES attempts")
         }
+    }
+
+    private fun currentEngineName(): String? =
+        try { tts?.defaultEngine } catch (e: Exception) { null }
+
+    private fun isGoogleTtsInstalled(): Boolean {
+        return try {
+            tts?.engines?.any { it.name == GOOGLE_TTS_PACKAGE } == true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to query installed TTS engines", e)
+            false
+        }
+    }
+
+    private fun switchToGoogleEngine() {
+        mainHandler.post {
+            Log.d(TAG, "Switching TTS engine to Google ($GOOGLE_TTS_PACKAGE)")
+            try {
+                tts?.shutdown()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error shutting down before engine switch", e)
+            }
+            tts = TextToSpeech(context, this, GOOGLE_TTS_PACKAGE)
+            setupTTSListener()
+        }
+    }
+
+    private fun notifyKoreanUnavailable() {
+        val callback = onKoreanUnavailable
+        if (callback == null || notifiedUnavailable) return
+        notifiedUnavailable = true
+        val needsData = koreanNeedsData
+        mainHandler.post { callback.invoke(needsData) }
     }
 
     private fun setOptimalVoice() {
@@ -169,6 +232,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             if (isInitialized) return@post
             Log.d(TAG, "ensureReady: forcing TTS reinit")
             initRetryCount = 0
+            triedGoogleFallback = false
+            koreanUnavailable = false
             try {
                 tts?.shutdown()
             } catch (e: Exception) {
