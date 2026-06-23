@@ -1,7 +1,7 @@
 {
-  "latestVersionCode": 108,
-  "latestVersionName": "1.3.77",
-  "minimumVersionCode": 108,
+  "latestVersionCode": 109,
+  "latestVersionName": "1.3.78",
+  "minimumVersionCode": 109,
   "updateMessage": "새로운 업데이트가 있습니다.\n\n주요 업데이트:\n- 음성 알림이 갑자기 들리지 않던 문제 자동 복구\n- 일부 기기에서 발생하던 무음 현상 수정\n\n업데이트를 권장합니다.",
   "playStoreUrl": "https://play.google.com/store/apps/details?id=com.family.bankvoicealert"
 }
