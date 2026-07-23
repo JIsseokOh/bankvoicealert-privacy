@@ -11,14 +11,14 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace 'com.family.bankvoicealert'
-    compileSdk 35
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.family.bankvoicealert"
         minSdk 21
-        targetSdk 35
-        versionCode 109
-        versionName "1.3.78"
+        targetSdk 36
+        versionCode 110
+        versionName "1.3.79"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -75,9 +75,6 @@ dependencies {
 
     // Google AdMob for ads
     implementation 'com.google.android.gms:play-services-ads:23.0.0'
-
-    // Google Play Billing for subscription
-    implementation 'com.android.billingclient:billing-ktx:7.0.0'
 
     // Gson for JSON serialization
     implementation 'com.google.code.gson:gson:2.10.1'
