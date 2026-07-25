@@ -27,6 +27,8 @@ class BankNotificationService : NotificationListenerService() {
         private const val DEPOSIT_CHANNEL_ID = "deposit_alert"
         private val AMOUNT_CHECK_PATTERN = Regex("[0-9,]+\\s?원(?![가-힣])")
         private val AMOUNT_EXTRACT_PATTERN = Regex("([0-9,]+)\\s?원(?![가-힣])")
+        // "입금" 바로 뒤 금액(원 미표기) - iM뱅크 등: "입금 22,500 잔액 ..."
+        private val DEPOSIT_AMOUNT_NO_WON_PATTERN = Regex("입금\\s?([0-9,]+)")
         private val SENDER_PATTERNS = listOf(
             Regex("([가-힣]{2,4})님?으?로?부터"),
             Regex("([가-힣]{2,4})\\s*입금"),
@@ -212,9 +214,13 @@ class BankNotificationService : NotificationListenerService() {
 
     private fun isDepositNotification(text: String): Boolean {
         val lowerText = text.lowercase(Locale.ROOT)
-        // "입금" 키워드와 금액 패턴 (xxx원) 확인 - 앞뒤로 공백/대괄호/문자열 경계가 있을 때만 매칭
-        if (!Regex("(^|\\s|\\[|[0-9]\\s?원\\s?)입금(\\s|$|\\]|\\s?[0-9])").containsMatchIn(lowerText) ||
-            !AMOUNT_CHECK_PATTERN.containsMatchIn(text)) {
+        // "입금" 키워드 경계 확인 - 앞뒤로 공백/대괄호/문자열 경계가 있을 때만 매칭
+        val hasDepositKeyword =
+            Regex("(^|\\s|\\[|[0-9]\\s?원\\s?)입금(\\s|$|\\]|\\s?[0-9])").containsMatchIn(lowerText)
+        // 금액 확인: "xxx원"(대다수 은행) 또는 "입금 xxx"(원 미표기, iM뱅크 등) 형태 허용
+        val hasAmount = AMOUNT_CHECK_PATTERN.containsMatchIn(text) ||
+            DEPOSIT_AMOUNT_NO_WON_PATTERN.containsMatchIn(text)
+        if (!hasDepositKeyword || !hasAmount) {
             return false
         }
 
@@ -243,7 +249,12 @@ class BankNotificationService : NotificationListenerService() {
         Regex("([0-9,]+)\\s?원\\s?입금").find(text)?.let {
             return it.groupValues[1].replace(",", "")
         }
-        // 3순위: 텍스트 내 첫 번째 금액 (폴백)
+        // 3순위: "입금" 바로 뒤 금액 (원 미표기, iM뱅크 등: "입금 22,500 잔액 ...")
+        DEPOSIT_AMOUNT_NO_WON_PATTERN.find(text)?.let {
+            val digits = it.groupValues[1].replace(",", "")
+            if (digits.isNotEmpty()) return digits
+        }
+        // 4순위: 텍스트 내 첫 번째 금액 (폴백)
         val match = AMOUNT_EXTRACT_PATTERN.find(text)
         return match?.groupValues?.get(1)?.replace(",", "") ?: ""
     }
