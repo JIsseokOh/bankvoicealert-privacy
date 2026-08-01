@@ -14,23 +14,37 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="1번 버튼 누르기"
-        android:textSize="28sp"
+        android:text="사용방법"
+        android:textSize="26sp"
         android:textStyle="bold"
-        android:textColor="#F0F2F5"
+        android:textColor="#00ff88"
         android:gravity="center"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="20dp"
         android:letterSpacing="0.02"/>
 
-    <!-- 두번째 줄 -->
+    <!-- 1단계 -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="2번 버튼 누르고 나가면 끝!"
-        android:textSize="28sp"
+        android:text="1. 은행 메시지 서비스 신청하거나\n     앱 알림 활성화 하기"
+        android:textSize="22sp"
         android:textStyle="bold"
         android:textColor="#F0F2F5"
-        android:gravity="center"
+        android:gravity="start"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="16dp"
+        android:letterSpacing="0.02"/>
+
+    <!-- 2단계 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="2. 1번 버튼과 2번 버튼 누르면 끝!"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="#F0F2F5"
+        android:gravity="start"
+        android:lineSpacingExtra="4dp"
         android:layout_marginBottom="28dp"
         android:letterSpacing="0.02"/>
 
