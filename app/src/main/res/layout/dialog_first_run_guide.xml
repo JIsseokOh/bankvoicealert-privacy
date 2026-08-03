@@ -26,8 +26,8 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="1. 은행 메시지 서비스 신청하거나\n     앱 알림 활성화 하기"
-        android:textSize="22sp"
+        android:text="1. 은행 메시지 서비스 신청하거나\n     은행앱 알림 활성화 하기"
+        android:textSize="21sp"
         android:textStyle="bold"
         android:textColor="#F0F2F5"
         android:gravity="start"
@@ -39,8 +39,8 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="2. 1번 버튼과 2번 버튼 누르면 끝!"
-        android:textSize="22sp"
+        android:text="2. 띵동 앱 1번 버튼과\n     2번 버튼 누르면 끝!"
+        android:textSize="21sp"
         android:textStyle="bold"
         android:textColor="#F0F2F5"
         android:gravity="start"
