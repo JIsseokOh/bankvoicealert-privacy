@@ -22,28 +22,27 @@
         android:layout_marginBottom="20dp"
         android:letterSpacing="0.02"/>
 
-    <!-- 1단계 -->
+    <!-- 앱 소개 -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="1. 은행 메시지 서비스 신청하거나\n     은행앱 알림 활성화 하기"
-        android:textSize="21sp"
-        android:textStyle="bold"
-        android:textColor="#F0F2F5"
-        android:gravity="start"
+        android:text="띵동은 입금 관련 알림을\n소리내어 읽어주는 앱입니다."
+        android:textSize="20sp"
+        android:textColor="#C8CDD4"
+        android:gravity="center"
         android:lineSpacingExtra="4dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginBottom="18dp"
         android:letterSpacing="0.02"/>
 
-    <!-- 2단계 -->
+    <!-- 사용 안내 -->
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="2. 띵동 앱 1번 버튼과\n     2번 버튼 누르면 끝!"
-        android:textSize="21sp"
+        android:text="띵동 앱 1번 버튼과\n2번 버튼 누르면 끝!"
+        android:textSize="23sp"
         android:textStyle="bold"
         android:textColor="#F0F2F5"
-        android:gravity="start"
+        android:gravity="center"
         android:lineSpacingExtra="4dp"
         android:layout_marginBottom="28dp"
         android:letterSpacing="0.02"/>
