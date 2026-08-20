@@ -464,67 +464,59 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     }
 
     /**
-     * 음성 출력(소리)이 안 될 때 원인 파악에 필요한 환경 정보를 수집한다.
-     * 문의 시 사용자가 복사해 보내는 용도이며, 거래 내역 등 민감정보는 포함하지 않는다.
+     * 소리가 안 나는 원인이 될 수 있는 항목만 골라 (제목, 설명) 목록으로 돌려준다.
+     * 재생 직전에 알람/미디어 볼륨을 직접 올리므로, 시스템 볼륨이 낮은 것 자체는 문제로 보지 않는다.
+     * 거래 내역 등 민감정보는 다루지 않는다.
      */
-    fun getSoundDiagnostics(): String {
-        val sb = StringBuilder()
-        val currentTts = tts
+    fun getSoundIssues(): List<Pair<String, String>> {
+        val issues = mutableListOf<Pair<String, String>>()
 
-        sb.appendLine("TTS 준비: ${if (isInitialized) "성공" else "실패/대기중 ⚠️"}")
-
-        val engine = try { currentTts?.defaultEngine ?: "알 수 없음" } catch (e: Exception) { "조회실패" }
-        sb.appendLine("기본 엔진: $engine")
-
-        val langStatus = try {
-            when (currentTts?.isLanguageAvailable(Locale.KOREAN)) {
-                TextToSpeech.LANG_AVAILABLE,
-                TextToSpeech.LANG_COUNTRY_AVAILABLE,
-                TextToSpeech.LANG_COUNTRY_VAR_AVAILABLE -> "사용가능"
-                TextToSpeech.LANG_MISSING_DATA -> "데이터 없음 ⚠️"
-                TextToSpeech.LANG_NOT_SUPPORTED -> "미지원 ⚠️"
-                else -> "알 수 없음 ⚠️"
-            }
-        } catch (e: Exception) { "조회실패" }
-        sb.appendLine("한국어 음성: $langStatus")
-
-        val voiceInfo = try {
-            val v = currentTts?.voice
-            if (v != null) "${v.name} (네트워크필요=${v.isNetworkConnectionRequired})" else "없음 ⚠️"
-        } catch (e: Exception) { "조회실패" }
-        sb.appendLine("선택 음성: $voiceInfo")
-
-        try {
-            val alarmCur = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
-            val alarmMax = audioManager.getStreamMaxVolume(AudioManager.STREAM_ALARM)
-            val musicCur = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-            val musicMax = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-            sb.appendLine("알람 볼륨: $alarmCur/$alarmMax${if (alarmCur == 0) " ⚠️" else ""}")
-            sb.appendLine("미디어 볼륨: $musicCur/$musicMax")
-        } catch (e: Exception) {
-            sb.appendLine("볼륨: 조회실패")
+        // 재시도를 모두 소진하고도 초기화가 안 된 경우만 실패로 본다(초기화 중 오탐 방지)
+        if (!isInitialized && !koreanUnavailable && initRetryCount >= MAX_INIT_RETRIES) {
+            issues.add("음성 기능이 준비되지 않았어요" to "휴대폰을 다시 켠 뒤에도 소리가 없으면 알려주세요.")
         }
 
-        val bt = try { bluetoothAudioManager.isBluetoothAudioConnected() } catch (e: Exception) { false }
-        sb.appendLine("블루투스 오디오: ${if (bt) "연결됨 ⚠️" else "없음"}")
+        if (koreanUnavailable) {
+            val detail = if (koreanNeedsData) {
+                "한국어 음성 데이터가 없어요. 음성 설정에서 한국어를 설치해 주세요."
+            } else {
+                "한국어를 읽을 수 있는 음성이 없어요. 'Google 음성 서비스' 설치가 필요해요."
+            }
+            issues.add("한국어 음성을 쓸 수 없어요" to detail)
+        }
+
+        val volumePercent = try {
+            context.getSharedPreferences("settings", Context.MODE_PRIVATE).getInt("volume_percent", 100)
+        } catch (e: Exception) {
+            100
+        }
+        if (volumePercent <= 10) {
+            issues.add("앱 소리 크기가 ${volumePercent}%예요" to "화면의 소리 막대를 올려야 목소리가 들려요.")
+        }
 
         val dnd = try {
             val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            when (nm.currentInterruptionFilter) {
-                NotificationManager.INTERRUPTION_FILTER_ALL -> "꺼짐"
-                NotificationManager.INTERRUPTION_FILTER_PRIORITY -> "우선순위만 ⚠️"
-                NotificationManager.INTERRUPTION_FILTER_NONE -> "전체차단 ⚠️"
-                NotificationManager.INTERRUPTION_FILTER_ALARMS -> "알람만 ⚠️"
-                else -> "알 수 없음"
-            }
-        } catch (e: Exception) { "조회실패" }
-        sb.appendLine("방해금지(DND): $dnd")
+            nm.currentInterruptionFilter
+        } catch (e: Exception) {
+            NotificationManager.INTERRUPTION_FILTER_ALL
+        }
+        when (dnd) {
+            NotificationManager.INTERRUPTION_FILTER_NONE ->
+                issues.add("방해금지(무음) 모드가 켜져 있어요" to "모든 소리가 막혀 있어요. 방해금지를 꺼주세요.")
+            NotificationManager.INTERRUPTION_FILTER_PRIORITY,
+            NotificationManager.INTERRUPTION_FILTER_ALARMS ->
+                issues.add("방해금지 모드가 켜져 있어요" to "설정에 따라 목소리가 안 들릴 수 있어요.")
+        }
 
-        try {
-            val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-            sb.appendLine("앱 볼륨설정: ${prefs.getInt("volume_percent", 100)}% / 속도 ${prefs.getFloat("speech_rate", 1.0f)}")
-        } catch (e: Exception) {}
+        val btConnected = try {
+            bluetoothAudioManager.isBluetoothAudioConnected()
+        } catch (e: Exception) {
+            false
+        }
+        if (btConnected) {
+            issues.add("블루투스로 소리가 나가고 있어요" to "이어폰·스피커 연결을 끊으면 휴대폰에서 소리가 나요.")
+        }
 
-        return sb.toString().trimEnd()
+        return issues
     }
 }

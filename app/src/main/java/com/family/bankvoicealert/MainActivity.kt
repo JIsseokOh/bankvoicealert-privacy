@@ -33,6 +33,11 @@ import androidx.activity.OnBackPressedCallback
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        // TTS 초기화·백그라운드 서비스 확인이 끝난 뒤 진단하도록 두는 여유 시간
+        private const val DIAGNOSTICS_DELAY_MS = 1500L
+    }
+
     private lateinit var prefs: SharedPreferences
     private lateinit var audioManager: AudioManager
     private lateinit var ttsManager: TTSManager
@@ -57,6 +62,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var salesSummaryButton: Button
     private lateinit var popupToggleButton: Button
     private lateinit var depositDataManager: DepositDataManager
+
+    // 시작 진단(앱을 켤 때마다 문제 항목을 모아 1회 안내)
+    private val diagnosticsHandler = Handler(Looper.getMainLooper())
+    private var diagnosticsShown = false
+    private var diagnosticsScheduled = false
+    private var guideDialogShowing = false
+    private var isForeground = false
 
     override fun attachBaseContext(newBase: Context) {
         // 시스템 폰트 스케일을 1.0으로 고정하여 텍스트 크기 변경 방지
@@ -102,19 +114,10 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        // 종합 권한 체크 (꺼진 권한이 있으면 알림)
-        checkAllPermissions()
-
         // 첫 실행 체크 및 가이드 표시
         checkFirstRun()
 
-        // 배터리 최적화가 제외되지 않았으면 자동으로 요청
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isIgnoringBatteryOptimizations()) {
-            requestBatteryOptimizationExemption()
-        }
-
-        // 다른 앱 위에 표시 권한 확인 (백그라운드 팝업 알림에 필요)
-        requestOverlayPermission()
+        // 권한·소리·백그라운드 상태는 onResume에서 한 번에 점검해 진단 팝업으로 안내한다
     }
     
     private fun initViews() {
@@ -221,7 +224,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         supportButton.setOnClickListener {
-            sendDiagnosticsAndOpenSupport()
+            showSupportDialog()
         }
 
         permissionButton.setOnClickListener {
@@ -243,51 +246,192 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
-    private fun checkAllPermissions() {
-        val missingPermissions = mutableListOf<String>()
+    // ===== 앱 시작 시 자가 진단 =====
 
-        // 1. 알림 접근 권한
+    /** 작동에 문제가 될 수 있는 항목 하나 (fix 가 있으면 팝업에서 바로 조치할 수 있다) */
+    private data class StartupIssue(
+        val title: String,
+        val detail: String,
+        val fixLabel: String? = null,
+        val fix: (() -> Unit)? = null
+    )
+
+    /**
+     * 앱을 켤 때마다 문제 항목을 점검해 한 번만 안내한다.
+     * TTS 초기화와 백그라운드 서비스 상태 확인(500ms)이 끝난 뒤 판정하도록 잠시 뒤에 실행한다.
+     */
+    private fun scheduleStartupDiagnostics() {
+        if (diagnosticsShown || diagnosticsScheduled || guideDialogShowing) return
+        diagnosticsScheduled = true
+        diagnosticsHandler.postDelayed({
+            diagnosticsScheduled = false
+            showStartupDiagnostics()
+        }, DIAGNOSTICS_DELAY_MS)
+    }
+
+    private fun showStartupDiagnostics() {
+        // 화면에 없을 때는 표시하지 않고, 돌아왔을 때 최신 상태로 다시 점검한다
+        if (isFinishing || isDestroyed || !isForeground || diagnosticsShown || guideDialogShowing) return
+        diagnosticsShown = true
+
+        val issues = collectStartupIssues()
+        if (issues.isEmpty()) return
+
+        val message = buildString {
+            append("아래 항목 때문에 입금 소리가 안 날 수 있어요.\n")
+            issues.forEachIndexed { index, issue ->
+                append("\n${index + 1}. ${issue.title}\n")
+                append("    ${issue.detail}\n")
+            }
+        }
+
+        val firstFixable = issues.firstOrNull { it.fix != null }
+        val fix = firstFixable?.fix
+        val fixLabel = firstFixable?.fixLabel ?: "설정하기"
+
+        val builder = AlertDialog.Builder(this)
+            .setTitle("확인해 주세요")
+            .setMessage(message)
+
+        if (fix != null) {
+            builder.setPositiveButton(fixLabel) { _, _ ->
+                // 조치한 뒤 남은 문제를 이어서 안내한다
+                // (설정 화면으로 이동한 경우에는 앱으로 돌아왔을 때 다시 점검한다)
+                diagnosticsShown = false
+                fix()
+                scheduleStartupDiagnostics()
+            }
+            builder.setNegativeButton("나중에", null)
+        } else {
+            builder.setPositiveButton("확인", null)
+        }
+
+        builder.show()
+    }
+
+    /**
+     * 문의 때 확인하던 진단 항목을 앱이 직접 점검해 문제가 되는 것만 골라낸다.
+     * 거래 내역 등 민감정보는 다루지 않으며, 화면 안내에만 사용한다(클립보드 복사 없음).
+     */
+    private fun collectStartupIssues(): List<StartupIssue> {
+        val issues = mutableListOf<StartupIssue>()
+
         if (!isNotificationServiceEnabled()) {
-            missingPermissions.add("알림 접근 권한")
+            issues.add(StartupIssue(
+                title = "1번 버튼이 아직 안 눌렸어요",
+                detail = "은행 알림을 읽을 수 없어요. 1번 버튼을 눌러 주세요.",
+                fixLabel = "1번 켜러 가기",
+                fix = { openNotificationSettings() }
+            ))
         }
 
-        // 2. 알림 표시 권한 (Android 13+)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED) {
-                missingPermissions.add("알림 표시 권한")
-            }
+        if (!backgroundEnabled) {
+            issues.add(StartupIssue(
+                title = "2번 버튼이 아직 안 눌렸어요",
+                detail = "앱을 닫으면 알림을 못 읽어요. 2번 버튼을 눌러 주세요.",
+                fixLabel = "2번 켜기",
+                fix = { startBackgroundService() }
+            ))
+        } else if (!isServiceRunning(ForegroundService::class.java)) {
+            issues.add(StartupIssue(
+                title = "2번 기능이 멈춰 있어요",
+                detail = "켜져 있지만 실행이 중단됐어요. 다시 켜주세요.",
+                fixLabel = "다시 켜기",
+                fix = { startBackgroundService() }
+            ))
         }
 
-        // 3. 배터리 최적화 제외
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !isIgnoringBatteryOptimizations()) {
-            missingPermissions.add("상시 가동 모드 (배터리 최적화 제외)")
+            issues.add(StartupIssue(
+                title = "상시 가동 모드가 꺼져 있어요",
+                detail = "휴대폰이 앱을 재워서 알림을 놓칠 수 있어요.",
+                fixLabel = "상시 가동 켜기",
+                fix = { openBatteryOptimizationSettings() }
+            ))
         }
 
-        // 5. 다른 앱 위에 표시
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            missingPermissions.add("다른 앱 위에 표시 권한")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+            issues.add(StartupIssue(
+                title = "알림 표시 권한이 꺼져 있어요",
+                detail = "입금 알림이 화면에 표시되지 않아요.",
+                fixLabel = "알림 권한 켜기",
+                fix = { openAppNotificationSettings() }
+            ))
         }
 
-        if (missingPermissions.isNotEmpty()) {
-            val message = buildString {
-                append("다음 권한이 꺼져 있습니다.\n정상 작동을 위해 모두 켜주세요.\n\n")
-                missingPermissions.forEachIndexed { index, perm ->
-                    append("${index + 1}. $perm\n")
-                }
+        val popupEnabled = prefs.getBoolean("popup_alert_enabled", true)
+        if (popupEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+            issues.add(StartupIssue(
+                title = "팝업 표시 권한이 꺼져 있어요",
+                detail = "다른 앱을 보고 있을 때 입금 팝업이 안 떠요.",
+                fixLabel = "팝업 권한 켜기",
+                fix = { openOverlaySettings() }
+            ))
+        }
+
+        val powerSave = try {
+            (getSystemService(Context.POWER_SERVICE) as PowerManager).isPowerSaveMode
+        } catch (e: Exception) { false }
+        if (powerSave) {
+            issues.add(StartupIssue(
+                title = "절전 모드가 켜져 있어요",
+                detail = "절전 모드를 끄면 알림이 더 잘 울려요."
+            ))
+        }
+
+        // 소리(TTS·볼륨·방해금지·블루투스) 관련 문제
+        ttsManager.getSoundIssues().forEach { (title, detail) ->
+            issues.add(StartupIssue(title = title, detail = detail))
+        }
+
+        return issues
+    }
+
+    private fun openAppNotificationSettings() {
+        try {
+            startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+            })
+        } catch (e: Exception) {
+            openAppDetailsSettings()
+        }
+    }
+
+    private fun openOverlaySettings() {
+        try {
+            startActivity(Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                Uri.parse("package:$packageName")
+            ))
+        } catch (e: Exception) {
+            openAppDetailsSettings()
+        }
+    }
+
+    private fun openBatteryOptimizationSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+            intent.data = Uri.parse("package:$packageName")
+            startActivity(intent)
+        } catch (e: Exception) {
+            // 일부 기기에서 직접 요청이 안 되는 경우 배터리 최적화 설정 페이지로 이동
+            try {
+                startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+            } catch (e2: Exception) {
+                Toast.makeText(this, "배터리 최적화 설정을 열 수 없습니다", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
 
-            AlertDialog.Builder(this)
-                .setTitle("권한 확인 필요")
-                .setMessage(message)
-                .setPositiveButton("설정하기") { _, _ ->
-                    // 앱 권한 설정 페이지로 이동 (모든 권한을 한 곳에서 관리)
-                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                    intent.data = Uri.parse("package:$packageName")
-                    startActivity(intent)
-                }
-                .setNegativeButton("나중에", null)
-                .show()
+    private fun openAppDetailsSettings() {
+        try {
+            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+            intent.data = Uri.parse("package:$packageName")
+            startActivity(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "설정 화면을 열 수 없습니다", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -357,24 +501,34 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * 문의 버튼: 기기 진단 정보를 클립보드에 복사하고 안내한 뒤,
-     * 기존 동작인 카카오톡 오픈채팅을 이어서 연다.
+     * 문의 버튼: 지금 점검된 문제를 화면으로 보여준 뒤 카카오톡 오픈채팅을 연다.
+     * 진단 내용을 클립보드에 복사하지 않는다.
      */
-    private fun sendDiagnosticsAndOpenSupport() {
-        val diagnostics = collectDiagnostics()
-
-        try {
-            val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            clipboard.setPrimaryClip(android.content.ClipData.newPlainText("진단정보", diagnostics))
-        } catch (e: Exception) {
-            Log.e("MainActivity", "Failed to copy diagnostics", e)
+    private fun showSupportDialog() {
+        val issues = collectStartupIssues()
+        val message = if (issues.isEmpty()) {
+            // 문제가 없을 때 가장 많이 묻는 내용을 대신 안내한다
+            "지금은 설정에 문제가 없어요.\n\n" +
+                "• 은행 등록은 안 해도 됩니다.\n" +
+                "• 돈이 들지 않는 앱입니다.\n" +
+                "• 입금될 때 문자가 오거나, 은행 앱이 깔려 있어야 소리가 납니다.\n\n" +
+                "그래도 문제가 있으면 카카오톡으로 알려주세요."
+        } else {
+            buildString {
+                append("지금 확인된 문제예요.\n")
+                issues.forEachIndexed { index, issue ->
+                    append("\n${index + 1}. ${issue.title}\n")
+                    append("    ${issue.detail}\n")
+                }
+                append("\n고쳐도 안 되면 카카오톡으로 알려주세요.")
+            }
         }
 
         AlertDialog.Builder(this)
             .setTitle("문의하기")
-            .setMessage("문의에 도움이 되는 기기 진단 정보가 복사되었습니다.\n\n카카오톡 채팅창을 길게 눌러 '붙여넣기' 한 뒤 보내주시면 더 빠르게 도와드릴 수 있어요.")
+            .setMessage(message)
             .setPositiveButton("카카오톡 열기") { _, _ -> openSupportChat() }
-            .setNegativeButton("취소", null)
+            .setNegativeButton("닫기", null)
             .show()
     }
 
@@ -387,63 +541,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * 팝업·소리가 안 될 때 원인 파악에 필요한 기기 환경 정보를 모은다.
-     * 민감정보(거래 내역/금액 등)는 포함하지 않는다.
-     */
-    private fun collectDiagnostics(): String {
-        val sb = StringBuilder()
-        val now = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.getDefault())
-            .format(java.util.Date())
-
-        sb.appendLine("===== 기기 진단 정보 =====")
-        sb.appendLine("(이 내용을 그대로 붙여넣어 보내주세요)")
-        sb.appendLine("진단시각: $now")
-        sb.appendLine()
-
-        val versionName = try {
-            packageManager.getPackageInfo(packageName, 0).versionName
-        } catch (e: Exception) { "?" }
-        sb.appendLine("[앱/기기]")
-        sb.appendLine("앱 버전: $versionName")
-        sb.appendLine("기기: ${Build.MANUFACTURER} ${Build.MODEL}")
-        sb.appendLine("안드로이드: ${Build.VERSION.RELEASE} (SDK ${Build.VERSION.SDK_INT})")
-        sb.appendLine()
-
-        sb.appendLine("[소리]")
-        sb.appendLine(ttsManager.getSoundDiagnostics())
-        sb.appendLine()
-
-        sb.appendLine("[팝업/권한]")
-        val overlay = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) Settings.canDrawOverlays(this) else true
-        sb.appendLine("팝업표시 권한(오버레이): ${if (overlay) "허용" else "거부 ⚠️"}")
-        sb.appendLine("알림접근 권한: ${if (isNotificationServiceEnabled()) "허용" else "거부 ⚠️"}")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val notif = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
-            sb.appendLine("알림표시 권한: ${if (notif) "허용" else "거부 ⚠️"}")
-        }
-        sb.appendLine("팝업알림 설정: ${if (prefs.getBoolean("popup_alert_enabled", true)) "켜짐" else "꺼짐"}")
-        sb.appendLine()
-
-        sb.appendLine("[전원/백그라운드]")
-        sb.appendLine("배터리최적화 제외: ${if (isIgnoringBatteryOptimizations()) "예" else "아니오 ⚠️"}")
-        val powerSave = try {
-            (getSystemService(Context.POWER_SERVICE) as PowerManager).isPowerSaveMode
-        } catch (e: Exception) { false }
-        sb.appendLine("절전모드: ${if (powerSave) "켜짐 ⚠️" else "꺼짐"}")
-        val batteryPct = try {
-            (getSystemService(Context.BATTERY_SERVICE) as android.os.BatteryManager)
-                .getIntProperty(android.os.BatteryManager.BATTERY_PROPERTY_CAPACITY)
-        } catch (e: Exception) { -1 }
-        sb.appendLine("배터리: ${if (batteryPct in 0..100) "$batteryPct%" else "?"}")
-        sb.appendLine("백그라운드 실행중: ${if (isServiceRunning(ForegroundService::class.java)) "예" else "아니오 ⚠️"}")
-
-        return sb.toString().trimEnd()
-    }
     
     override fun onResume() {
         super.onResume()
+        isForeground = true
         adManager.resumeBannerAd()
         checkPermissions()
         ttsManager.ensureReady()
@@ -457,6 +558,9 @@ class MainActivity : AppCompatActivity() {
         Handler(Looper.getMainLooper()).postDelayed({
             checkBackgroundServiceStatus()
         }, 500)
+
+        // 앱을 켤 때마다 작동에 문제가 될 항목을 모아 한 번 안내한다
+        scheduleStartupDiagnostics()
     }
 
     private fun checkBackgroundServiceStatus() {
@@ -561,13 +665,16 @@ class MainActivity : AppCompatActivity() {
     private fun updateServiceToggleButton() {
         serviceToggleButton.text = "1번 버튼"
         serviceToggleButton.backgroundTintList = null
-        serviceToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_primary_bg)
+        // 꺼져 있을 때는 위 안내 문구(#FF6B6B)와 같은 붉은색으로 표시한다
+        val background = if (serviceEnabled) R.drawable.btn_primary_bg else R.drawable.btn_inactive_bg
+        serviceToggleButton.background = ContextCompat.getDrawable(this, background)
     }
 
     private fun updateBackgroundToggleButton() {
         backgroundToggleButton.text = "2번 버튼"
         backgroundToggleButton.backgroundTintList = null
-        backgroundToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_primary_bg)
+        val background = if (backgroundEnabled) R.drawable.btn_primary_bg else R.drawable.btn_inactive_bg
+        backgroundToggleButton.background = ContextCompat.getDrawable(this, background)
     }
 
     private fun updatePopupToggleButton(enabled: Boolean) {
@@ -611,19 +718,7 @@ class MainActivity : AppCompatActivity() {
                     .setTitle("상시 가동 모드")
                     .setMessage("배터리 최적화를 제외하면 24시간 제한 없이 계속 실행됩니다.")
                     .setPositiveButton("설정하기") { _, _ ->
-                        try {
-                            val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
-                            intent.data = Uri.parse("package:$packageName")
-                            startActivity(intent)
-                        } catch (e: Exception) {
-                            // 일부 기기에서 직접 요청이 안 되는 경우 배터리 최적화 설정 페이지로 이동
-                            try {
-                                val intent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-                                startActivity(intent)
-                            } catch (e2: Exception) {
-                                Toast.makeText(this, "배터리 최적화 설정을 열 수 없습니다", Toast.LENGTH_SHORT).show()
-                            }
-                        }
+                        openBatteryOptimizationSettings()
                     }
                     .setNegativeButton("취소", null)
                     .show()
@@ -670,23 +765,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun requestOverlayPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            AlertDialog.Builder(this)
-                .setTitle("팝업 알림 권한 필요")
-                .setMessage("백그라운드에서 입금 팝업 알림을 표시하려면\n'다른 앱 위에 표시' 권한이 필요합니다.")
-                .setPositiveButton("설정으로 이동") { _, _ ->
-                    val intent = Intent(
-                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                        Uri.parse("package:$packageName")
-                    )
-                    startActivity(intent)
-                }
-                .setNegativeButton("나중에", null)
-                .show()
-        }
-    }
-
     private fun showNotificationPermissionGuide() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             AlertDialog.Builder(this)
@@ -723,11 +801,13 @@ class MainActivity : AppCompatActivity() {
     
     override fun onPause() {
         super.onPause()
+        isForeground = false
         adManager.pauseBannerAd()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        diagnosticsHandler.removeCallbacksAndMessages(null)
         adManager.destroyBannerAd()
         // Activity 누수 방지를 위해 콜백만 해제 (싱글톤이므로 shutdown은 호출하지 않음)
         ttsManager.onKoreanUnavailable = null
@@ -872,6 +952,13 @@ class MainActivity : AppCompatActivity() {
             .setCancelable(false)
             .create()
 
+        // 가이드가 떠 있는 동안에는 진단 팝업을 띄우지 않고, 닫힌 뒤에 점검한다
+        guideDialogShowing = true
+        dialog.setOnDismissListener {
+            guideDialogShowing = false
+            scheduleStartupDiagnostics()
+        }
+
         btnSetupNow.setOnClickListener {
             // 다시 보지 않기 체크 시 저장
             if (checkDontShowAgain.isChecked) {
@@ -933,6 +1020,13 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogView)
             .setCancelable(true)
             .create()
+
+        // 안내가 떠 있는 동안에는 진단 팝업을 띄우지 않고, 닫힌 뒤에 점검한다
+        guideDialogShowing = true
+        dialog.setOnDismissListener {
+            guideDialogShowing = false
+            scheduleStartupDiagnostics()
+        }
 
         btnConfirm.setOnClickListener {
             dialog.dismiss()
