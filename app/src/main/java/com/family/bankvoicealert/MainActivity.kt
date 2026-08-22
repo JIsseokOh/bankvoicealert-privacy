@@ -508,8 +508,7 @@ class MainActivity : AppCompatActivity() {
         val issues = collectStartupIssues()
         val message = if (issues.isEmpty()) {
             // 문제가 없을 때 가장 많이 묻는 내용을 대신 안내한다
-            "지금은 설정에 문제가 없어요.\n\n" +
-                "• 은행 등록은 안 해도 됩니다.\n" +
+            "• 은행 등록은 안 해도 됩니다.\n" +
                 "• 돈이 들지 않는 앱입니다.\n" +
                 "• 입금될 때 문자가 오거나, 은행 앱이 깔려 있어야 소리가 납니다.\n\n" +
                 "그래도 문제가 있으면 카카오톡으로 알려주세요."
