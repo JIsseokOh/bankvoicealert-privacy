@@ -260,6 +260,14 @@
                 android:orientation="vertical"/>
         </androidx.core.widget.NestedScrollView>
 
+        <!-- 5. 네이티브 광고 (로드에 성공했을 때만 표시) -->
+        <LinearLayout
+            android:id="@+id/nativeAdContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="12dp"
+            android:visibility="gone"/>
 
     </LinearLayout>
 </ScrollView>

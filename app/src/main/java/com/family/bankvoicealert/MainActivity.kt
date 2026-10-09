@@ -30,12 +30,29 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import androidx.activity.OnBackPressedCallback
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
         // TTS 초기화·백그라운드 서비스 확인이 끝난 뒤 진단하도록 두는 여유 시간
         private const val DIAGNOSTICS_DELAY_MS = 1500L
+
+        // 진단 팝업이 닫힌 뒤 리뷰 요청을 띄우기 전 여유 시간 (설정 화면으로 나가는 중이면 띄우지 않기 위함)
+        private const val REVIEW_PROMPT_DELAY_MS = 600L
+
+        // 리뷰 요청: 첫 실행 후 최소 하루가 지난 사용자에게, 하루 1회, 리뷰를 남기기 전까지만
+        private const val PREF_FIRST_LAUNCH_TIME = "first_launch_time"
+        private const val PREF_REVIEW_DONE = "review_done"
+        private const val PREF_REVIEW_LAST_PROMPT_DAY = "review_last_prompt_day"
+        private const val REVIEW_PROMPT_MIN_AGE_MS = 24 * 60 * 60 * 1000L
+
+        // 친구 초대 링크 (Play Console 획득 보고서에서 utm 값으로 유입을 구분할 수 있다)
+        private const val STORE_PAGE_URL = "https://play.google.com/store/apps/details?id=com.family.bankvoicealert"
+        private const val INVITE_STORE_URL = STORE_PAGE_URL +
+            "&referrer=utm_source%3Dapp%26utm_medium%3Dinvite%26utm_campaign%3Dfriend_invite"
     }
 
     private lateinit var prefs: SharedPreferences
@@ -61,6 +78,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batteryOptimizationButton: Button
     private lateinit var salesSummaryButton: Button
     private lateinit var popupToggleButton: Button
+    private lateinit var inviteButton: Button
+    private lateinit var adContainer: LinearLayout
     private lateinit var depositDataManager: DepositDataManager
 
     // 시작 진단(앱을 켤 때마다 문제 항목을 모아 1회 안내)
@@ -68,6 +87,7 @@ class MainActivity : AppCompatActivity() {
     private var diagnosticsShown = false
     private var diagnosticsScheduled = false
     private var guideDialogShowing = false
+    private var reviewDialogShowing = false
     private var isForeground = false
 
     override fun attachBaseContext(newBase: Context) {
@@ -86,6 +106,11 @@ class MainActivity : AppCompatActivity() {
 
         // 기존 사용자 마이그레이션: is_first_run -> dont_show_guide
         migratePreferences()
+
+        // 리뷰 요청 기준점: 이 버전에서 처음 실행한 시각 (기존 사용자도 업데이트 후 첫 실행 시각이 기록된다)
+        if (!prefs.contains(PREF_FIRST_LAUNCH_TIME)) {
+            prefs.edit().putLong(PREF_FIRST_LAUNCH_TIME, System.currentTimeMillis()).apply()
+        }
         audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         ttsManager = TTSManager.getInstance(this)
         // 자동 엔진 폴백으로도 한국어 음성을 못 쓰면 설치/설정 안내 다이얼로그를 띄운다.
@@ -102,8 +127,8 @@ class MainActivity : AppCompatActivity() {
         // 앱 시작 시 버전 체크
         checkForAppUpdate()
 
-        // 배너 광고 로드
-        val adContainer = findViewById<LinearLayout>(R.id.adContainer)
+        // 배너 광고 로드 (화면 폭에 맞는 앵커 적응형 배너)
+        adContainer = findViewById(R.id.adContainer)
         adManager.loadBannerAd(adContainer)
         requestNotificationPermission()
 
@@ -136,6 +161,7 @@ class MainActivity : AppCompatActivity() {
         batteryOptimizationButton = findViewById(R.id.batteryOptimizationButton)
         salesSummaryButton = findViewById(R.id.salesSummaryButton)
         popupToggleButton = findViewById(R.id.popupToggleButton)
+        inviteButton = findViewById(R.id.inviteButton)
     }
     
     private fun loadSettings() {
@@ -227,6 +253,10 @@ class MainActivity : AppCompatActivity() {
             showSupportDialog()
         }
 
+        inviteButton.setOnClickListener {
+            shareAppWithFriends()
+        }
+
         permissionButton.setOnClickListener {
             openNotificationSettings()
         }
@@ -275,7 +305,11 @@ class MainActivity : AppCompatActivity() {
         diagnosticsShown = true
 
         val issues = collectStartupIssues()
-        if (issues.isEmpty()) return
+        if (issues.isEmpty()) {
+            // 문제가 없을 때만 리뷰를 부탁한다
+            maybeShowReviewPrompt()
+            return
+        }
 
         val message = buildString {
             append("아래 항목 때문에 입금 소리가 안 날 수 있어요.\n")
@@ -306,7 +340,87 @@ class MainActivity : AppCompatActivity() {
             builder.setPositiveButton("확인", null)
         }
 
+        // 진단 안내가 닫힌 뒤 (설정 화면으로 나가는 중이 아니면) 리뷰를 부탁한다
+        builder.setOnDismissListener {
+            diagnosticsHandler.postDelayed({ maybeShowReviewPrompt() }, REVIEW_PROMPT_DELAY_MS)
+        }
+
         builder.show()
+    }
+
+    // ===== 리뷰 요청 =====
+
+    /**
+     * 아직 리뷰를 남기지 않은 사용자에게 하루 한 번만 리뷰를 부탁한다.
+     * 조건: 1번·2번 설정이 끝난 사용자, 첫 실행 후 하루 경과, 오늘 아직 안 띄움, 다른 안내창이 떠 있지 않음.
+     * Play 스토어는 실제 리뷰 작성 여부를 앱에 알려주지 않으므로 "리뷰 남기기"를 누르면 남긴 것으로 본다.
+     */
+    private fun maybeShowReviewPrompt() {
+        if (isFinishing || isDestroyed || !isForeground) return
+        if (guideDialogShowing || reviewDialogShowing || ttsSetupDialogShown) return
+        if (prefs.getBoolean(PREF_REVIEW_DONE, false)) return
+        if (!isNotificationServiceEnabled() || !backgroundEnabled) return
+
+        val firstLaunch = prefs.getLong(PREF_FIRST_LAUNCH_TIME, 0L)
+        if (firstLaunch == 0L || System.currentTimeMillis() - firstLaunch < REVIEW_PROMPT_MIN_AGE_MS) return
+
+        val today = SimpleDateFormat("yyyy-MM-dd", Locale.KOREA).format(Date())
+        if (prefs.getString(PREF_REVIEW_LAST_PROMPT_DAY, null) == today) return
+        prefs.edit().putString(PREF_REVIEW_LAST_PROMPT_DAY, today).apply()
+
+        reviewDialogShowing = true
+        AlertDialog.Builder(this)
+            .setTitle("띵동이 도움이 되시나요?")
+            .setMessage(
+                "별점과 리뷰를 남겨 주시면 다른 사장님들께 띵동을 알리는 데 큰 힘이 됩니다.\n" +
+                    "잠깐이면 됩니다."
+            )
+            .setPositiveButton("리뷰 남기기") { _, _ ->
+                if (openStoreListing()) {
+                    prefs.edit().putBoolean(PREF_REVIEW_DONE, true).apply()
+                }
+            }
+            .setNegativeButton("나중에", null)
+            .setNeutralButton("다시 보지 않기") { _, _ ->
+                prefs.edit().putBoolean(PREF_REVIEW_DONE, true).apply()
+            }
+            .setOnDismissListener { reviewDialogShowing = false }
+            .show()
+    }
+
+    /** Play 스토어의 이 앱 페이지를 연다. 스토어 앱이 없으면 웹 페이지로 연다. */
+    private fun openStoreListing(): Boolean {
+        return try {
+            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("market://details?id=$packageName")))
+            true
+        } catch (e: Exception) {
+            try {
+                startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(STORE_PAGE_URL)))
+                true
+            } catch (e2: Exception) {
+                Toast.makeText(this, "Play 스토어를 열 수 없습니다", Toast.LENGTH_SHORT).show()
+                false
+            }
+        }
+    }
+
+    // ===== 친구 초대 =====
+
+    /** 앱 소개 문구와 설치 링크를 카카오톡·문자 등 원하는 앱으로 보낼 수 있게 공유창을 연다. */
+    private fun shareAppWithFriends() {
+        val text = "입금되면 소리로 알려주는 '띵동 입금알리미' 추천해요!\n" +
+            "은행 등록 없이 1번 버튼, 2번 버튼만 누르면 끝.\n" +
+            "무료 다운로드: $INVITE_STORE_URL"
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_SUBJECT, "띵동 입금알리미")
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        try {
+            startActivity(Intent.createChooser(sendIntent, "친구에게 소개하기"))
+        } catch (e: Exception) {
+            Toast.makeText(this, "공유할 수 있는 앱이 없습니다", Toast.LENGTH_SHORT).show()
+        }
     }
 
     /**
@@ -808,6 +922,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         diagnosticsHandler.removeCallbacksAndMessages(null)
         adManager.destroyBannerAd()
+        adManager.destroyNativeAd()
         // Activity 누수 방지를 위해 콜백만 해제 (싱글톤이므로 shutdown은 호출하지 않음)
         ttsManager.onKoreanUnavailable = null
     }
@@ -1052,11 +1167,22 @@ class MainActivity : AppCompatActivity() {
         val tvDailyTotal = dialogView.findViewById<TextView>(R.id.tvDailyTotal)
         val tvMonthlyTotal = dialogView.findViewById<TextView>(R.id.tvMonthlyTotal)
         val btnBack = dialogView.findViewById<Button>(R.id.btnBack)
+        val nativeAdContainer = dialogView.findViewById<LinearLayout>(R.id.nativeAdContainer)
 
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .setCancelable(true)
             .create()
+
+        // 매출 집계를 보는 동안에는 하단 배너를 숨기고 다이얼로그 안 네이티브 광고 하나만 보여준다 (광고 2개 중복 노출 방지)
+        adContainer.visibility = View.GONE
+        adManager.pauseBannerAd()
+        adManager.loadNativeAd(nativeAdContainer)
+        dialog.setOnDismissListener {
+            adManager.destroyNativeAd()
+            adContainer.visibility = View.VISIBLE
+            adManager.resumeBannerAd()
+        }
 
         // 현재 날짜
         val calendar = java.util.Calendar.getInstance()
