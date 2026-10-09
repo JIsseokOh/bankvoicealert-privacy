@@ -17,6 +17,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 
 class DepositAlertActivity : AppCompatActivity() {
 
@@ -67,8 +70,20 @@ class DepositAlertActivity : AppCompatActivity() {
         val tvAmount = findViewById<TextView>(R.id.tvDepositAmount)
         tvAmount.text = "${amount} 입금되었습니다"
 
+        val rootLayout = findViewById<ViewGroup>(R.id.rootLayout)
+
+        // 상태바·제스처 바·노치 영역만큼 여백을 줘서 카드와 광고가 시스템 바에 가려지지 않게 한다 (Android 15+ 엣지 투 엣지)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+
         // Tap anywhere to dismiss
-        findViewById<ViewGroup>(R.id.rootLayout).setOnClickListener {
+        rootLayout.setOnClickListener {
             dismissHandler.removeCallbacks(dismissRunnable)
             finish()
         }

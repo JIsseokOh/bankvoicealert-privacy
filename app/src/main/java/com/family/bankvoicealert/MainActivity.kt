@@ -30,6 +30,9 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.GridLayout
 import androidx.activity.OnBackPressedCallback
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -101,6 +104,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        applyEdgeToEdgeInsets(findViewById(R.id.mainRoot))
 
         prefs = getSharedPreferences("settings", MODE_PRIVATE)
 
@@ -145,6 +149,22 @@ class MainActivity : AppCompatActivity() {
         // 권한·소리·백그라운드 상태는 onResume에서 한 번에 점검해 진단 팝업으로 안내한다
     }
     
+    /**
+     * Android 15+(targetSdk 35 이상)에서는 화면이 시스템 바 뒤까지 그려지므로,
+     * 상태바·내비게이션 바(제스처 바)·노치 영역만큼 루트 뷰에 안쪽 여백을 줘서
+     * 버튼과 하단 배너가 가려지지 않게 한다. 이전 버전에서도 같은 방식으로 동작하게 맞춘다.
+     */
+    private fun applyEdgeToEdgeInsets(root: View) {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+    }
+
     private fun initViews() {
         volumeSeekBar = findViewById(R.id.volumeSeekBar)
         volumeText = findViewById(R.id.volumeText)
