@@ -5,6 +5,7 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
+import android.media.MediaPlayer
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -15,7 +16,9 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.util.Log
+import java.io.File
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.random.Random
 
@@ -23,10 +26,12 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
     companion object {
         private const val TAG = "TTSManager"
-        private const val WATCHDOG_TIMEOUT_MS = 10_000L
+        // 합성(파일 생성) + 재생이 모두 끝나야 하므로 여유 있게 잡는다
+        private const val WATCHDOG_TIMEOUT_MS = 15_000L
         private const val MAX_INIT_RETRIES = 3
         private const val INIT_RETRY_DELAY_MS = 2_000L
         private const val GOOGLE_TTS_PACKAGE = "com.google.android.tts"
+        private const val SYNTH_FILE_PREFIX = "tts_"
 
         @Volatile
         private var INSTANCE: TTSManager? = null
@@ -45,6 +50,11 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private val speechQueue = ConcurrentLinkedQueue<SpeechItem>()
     private val pendingQueue = ConcurrentLinkedQueue<SpeechItem>()
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    // 파일로 합성 중인 항목 (utteranceId -> 항목). 합성이 끝나면 우리 프로세스에서 직접 재생한다.
+    private val synthesizing = ConcurrentHashMap<String, SpeechItem>()
+    private var mediaPlayer: MediaPlayer? = null
+    private var playingFile: File? = null
 
     private var tts: TextToSpeech? = null
     private var audioFocusRequest: Any? = null
@@ -77,6 +87,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             val elapsed = System.currentTimeMillis() - speakingStartTime
             if (elapsed > WATCHDOG_TIMEOUT_MS) {
                 Log.w(TAG, "Watchdog: stuck for ${elapsed}ms, resetting")
+                synthesizing.clear()
+                stopPlayback()
                 resetSpeakingState()
                 processNextInQueue()
             }
@@ -91,6 +103,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     )
 
     init {
+        cleanupSynthFiles()
         tts = TextToSpeech(context, this)
         setupTTSListener()
     }
@@ -195,6 +208,13 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             override fun onStart(utteranceId: String?) {}
 
             override fun onDone(utteranceId: String?) {
+                val item = utteranceId?.let { synthesizing.remove(it) }
+                if (item != null) {
+                    // 파일 합성 완료 → 우리 프로세스에서 재생
+                    Log.d(TAG, "TTS synthesized to file: $utteranceId")
+                    mainHandler.post { playSynthesizedFile(item) }
+                    return
+                }
                 Log.d(TAG, "TTS completed: $utteranceId")
                 resetSpeakingState()
                 processNextInQueue()
@@ -202,6 +222,13 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
             override fun onError(utteranceId: String?) {
                 Log.e(TAG, "TTS error: $utteranceId")
+                val item = utteranceId?.let { synthesizing.remove(it) }
+                if (item != null) {
+                    // 파일 합성이 실패하면 엔진이 직접 말하는 기존 방식으로 한 번 더 시도한다
+                    synthFileFor(item).delete()
+                    mainHandler.post { speakDirectly(item) }
+                    return
+                }
                 resetSpeakingState()
                 processNextInQueue()
             }
@@ -262,6 +289,12 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         speakNow(item)
     }
 
+    /**
+     * Android 17의 백그라운드 오디오 강화 규칙 때문에, 소리를 실제로 내는 TTS 엔진 프로세스(구글·삼성 TTS)는
+     * 백그라운드로 취급되어 재생이 조용히 음소거된다. 그래서 엔진에게는 음성을 파일로만 만들게 하고
+     * (synthesizeToFile), 재생은 포그라운드 서비스와 팝업 화면을 가진 우리 앱이 직접 한다.
+     * 파일 합성을 지원하지 않거나 실패하면 엔진이 직접 말하는 기존 방식으로 되돌아간다.
+     */
     private fun speakNow(item: SpeechItem) {
         val currentTts = tts
         if (currentTts == null) {
@@ -274,6 +307,101 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         val randomPitch = 0.8f + (Random.nextFloat() * 0.2f)
         currentTts.setSpeechRate(item.speechRate)
         currentTts.setPitch(randomPitch)
+
+        val file = synthFileFor(item)
+        file.delete()
+        synthesizing[item.utteranceId] = item
+        val result = try {
+            currentTts.synthesizeToFile(item.message, Bundle(), file, item.utteranceId)
+        } catch (e: Exception) {
+            Log.e(TAG, "synthesizeToFile threw", e)
+            TextToSpeech.ERROR
+        }
+        if (result != TextToSpeech.SUCCESS) {
+            Log.e(TAG, "synthesizeToFile failed (result=$result), falling back to direct speak")
+            synthesizing.remove(item.utteranceId)
+            speakDirectly(item)
+        }
+    }
+
+    /** 합성된 파일을 우리 프로세스의 MediaPlayer로 재생한다 (메인 스레드에서 호출) */
+    private fun playSynthesizedFile(item: SpeechItem) {
+        val file = synthFileFor(item)
+        if (!file.exists() || file.length() == 0L) {
+            Log.e(TAG, "Synthesized file missing, falling back to direct speak")
+            speakDirectly(item)
+            return
+        }
+
+        val btConnected = bluetoothAudioManager.isBluetoothAudioConnected()
+        setMaxVolume(item.volumePercent, btConnected)
+        requestAudioFocus(btConnected)
+
+        val playbackVolume = if (btConnected) {
+            (item.volumePercent / 100f).coerceIn(0.05f, 1.0f)
+        } else {
+            1.0f
+        }
+
+        stopPlayback()
+        val player = MediaPlayer()
+        try {
+            player.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setUsage(if (btConnected) AudioAttributes.USAGE_MEDIA else AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .build()
+            )
+            player.setDataSource(file.absolutePath)
+            player.setVolume(playbackVolume, playbackVolume)
+            player.setOnCompletionListener { finishPlayback() }
+            player.setOnErrorListener { _, what, extra ->
+                Log.e(TAG, "MediaPlayer error what=$what extra=$extra")
+                finishPlayback()
+                true
+            }
+            player.prepare()
+            mediaPlayer = player
+            playingFile = file
+            player.start()
+            vibrateWithIntensity(item.volumePercent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to play synthesized file, falling back to direct speak", e)
+            try { player.release() } catch (ignored: Exception) {}
+            mediaPlayer = null
+            playingFile = null
+            file.delete()
+            speakDirectly(item)
+        }
+    }
+
+    /** 재생이 끝났거나 실패했을 때: 플레이어 정리 → 상태 복구 → 다음 항목 */
+    private fun finishPlayback() {
+        stopPlayback()
+        resetSpeakingState()
+        processNextInQueue()
+    }
+
+    private fun stopPlayback() {
+        mediaPlayer?.let { player ->
+            try {
+                if (player.isPlaying) player.stop()
+            } catch (ignored: Exception) {}
+            try { player.release() } catch (ignored: Exception) {}
+        }
+        mediaPlayer = null
+        playingFile?.delete()
+        playingFile = null
+    }
+
+    /** 기존 방식: TTS 엔진이 직접 소리를 낸다 (파일 합성이 안 될 때만 사용) */
+    private fun speakDirectly(item: SpeechItem) {
+        val currentTts = tts
+        if (currentTts == null) {
+            resetSpeakingState()
+            processNextInQueue()
+            return
+        }
 
         val btConnected = bluetoothAudioManager.isBluetoothAudioConnected()
         val streamType = if (btConnected) AudioManager.STREAM_MUSIC else AudioManager.STREAM_ALARM
@@ -304,18 +432,30 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         vibrateWithIntensity(item.volumePercent)
     }
 
+    private fun synthFileFor(item: SpeechItem): File =
+        File(context.cacheDir, "$SYNTH_FILE_PREFIX${item.utteranceId}.wav")
+
+    /** 비정상 종료 등으로 남은 합성 파일 정리 */
+    private fun cleanupSynthFiles() {
+        try {
+            context.cacheDir.listFiles()
+                ?.filter { it.name.startsWith(SYNTH_FILE_PREFIX) && it.name.endsWith(".wav") }
+                ?.forEach { it.delete() }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error cleaning up synth files", e)
+        }
+    }
+
     private fun applyAudioAttributes(currentTts: TextToSpeech, btConnected: Boolean) {
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                val attrs = AudioAttributes.Builder()
-                    .setUsage(
-                        if (btConnected) AudioAttributes.USAGE_MEDIA
-                        else AudioAttributes.USAGE_ALARM
-                    )
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .build()
-                currentTts.setAudioAttributes(attrs)
-            }
+            val attrs = AudioAttributes.Builder()
+                .setUsage(
+                    if (btConnected) AudioAttributes.USAGE_MEDIA
+                    else AudioAttributes.USAGE_ALARM
+                )
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .build()
+            currentTts.setAudioAttributes(attrs)
         } catch (e: Exception) {
             Log.e(TAG, "Error applying audio attributes", e)
         }
@@ -452,6 +592,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
     fun shutdown() {
         mainHandler.removeCallbacks(speakingWatchdog)
+        synthesizing.clear()
+        stopPlayback()
         releaseAudioFocus()
         tts?.stop()
         tts?.shutdown()
