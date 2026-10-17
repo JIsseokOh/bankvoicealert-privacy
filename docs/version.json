@@ -2,6 +2,6 @@
   "latestVersionCode": 121,
   "latestVersionName": "1.3.90",
   "minimumVersionCode": 121,
-  "updateMessage": "새로운 업데이트가 있습니다.\n\n주요 업데이트:\n- 입금 팝업이 항상 표시되도록 변경 (팝업 끄기 설정 제거)\n- 최신 안드로이드 휴대폰에서 입금 소리가 나지 않던 문제 수정\n\n업데이트를 권장합니다.",
+  "updateMessage": "새로운 업데이트가 있습니다.\n\n주요 업데이트:\n- 안정성 향상\n\n업데이트를 권장합니다.",
   "playStoreUrl": "https://play.google.com/store/apps/details?id=com.family.bankvoicealert"
 }
