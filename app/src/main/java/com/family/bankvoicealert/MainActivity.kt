@@ -80,7 +80,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var backgroundText: TextView
     private lateinit var batteryOptimizationButton: Button
     private lateinit var salesSummaryButton: Button
-    private lateinit var popupToggleButton: Button
     private lateinit var inviteButton: Button
     private lateinit var adContainer: LinearLayout
     private lateinit var depositDataManager: DepositDataManager
@@ -180,7 +179,6 @@ class MainActivity : AppCompatActivity() {
         backgroundText = findViewById(R.id.backgroundText)
         batteryOptimizationButton = findViewById(R.id.batteryOptimizationButton)
         salesSummaryButton = findViewById(R.id.salesSummaryButton)
-        popupToggleButton = findViewById(R.id.popupToggleButton)
         inviteButton = findViewById(R.id.inviteButton)
     }
     
@@ -205,8 +203,10 @@ class MainActivity : AppCompatActivity() {
         // 배터리 최적화 상태에 따라 버튼 텍스트 업데이트
         updateBatteryOptimizationButton()
 
-        // 팝업 알림 상태 로드
-        updatePopupToggleButton(prefs.getBoolean("popup_alert_enabled", true))
+        // 입금 팝업은 항상 표시한다. 예전 버전의 팝업 끄기 설정값은 더 이상 쓰지 않으므로 지운다
+        if (prefs.contains("popup_alert_enabled")) {
+            prefs.edit().remove("popup_alert_enabled").apply()
+        }
 
         // Pre-generated assets are loaded automatically in TTSManager init
     }
@@ -255,13 +255,6 @@ class MainActivity : AppCompatActivity() {
 
         salesSummaryButton.setOnClickListener {
             showSalesSummaryDialog()
-        }
-
-        popupToggleButton.setOnClickListener {
-            val current = prefs.getBoolean("popup_alert_enabled", true)
-            val newState = !current
-            prefs.edit().putBoolean("popup_alert_enabled", newState).apply()
-            updatePopupToggleButton(newState)
         }
 
         helpButton.setOnClickListener {
@@ -495,8 +488,8 @@ class MainActivity : AppCompatActivity() {
             ))
         }
 
-        val popupEnabled = prefs.getBoolean("popup_alert_enabled", true)
-        if (popupEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+        // 입금 팝업은 항상 뜨므로 다른 앱 위에 표시 권한은 항상 점검한다
+        if (!Settings.canDrawOverlays(this)) {
             issues.add(StartupIssue(
                 title = "팝업 표시 권한이 꺼져 있어요",
                 detail = "다른 앱을 보고 있을 때 입금 팝업이 안 떠요.",
@@ -625,13 +618,10 @@ class MainActivity : AppCompatActivity() {
         ttsManager.ensureReady()
         ttsManager.speakSimple("띵동", "10000")
 
-        // 팝업 알림이 켜져 있을 때만 표시
-        if (prefs.getBoolean("popup_alert_enabled", true)) {
-            val intent = Intent(this, DepositAlertActivity::class.java).apply {
-                putExtra(DepositAlertActivity.EXTRA_AMOUNT, "10,000원")
-            }
-            startActivity(intent)
+        val intent = Intent(this, DepositAlertActivity::class.java).apply {
+            putExtra(DepositAlertActivity.EXTRA_AMOUNT, "10,000원")
         }
+        startActivity(intent)
     }
 
     /**
@@ -808,19 +798,6 @@ class MainActivity : AppCompatActivity() {
         backgroundToggleButton.backgroundTintList = null
         val background = if (backgroundEnabled) R.drawable.btn_primary_bg else R.drawable.btn_inactive_bg
         backgroundToggleButton.background = ContextCompat.getDrawable(this, background)
-    }
-
-    private fun updatePopupToggleButton(enabled: Boolean) {
-        popupToggleButton.backgroundTintList = null
-        if (enabled) {
-            popupToggleButton.text = "팝업 알림 켜짐"
-            popupToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
-            popupToggleButton.setTextColor(android.graphics.Color.parseColor("#FFFFFF"))
-        } else {
-            popupToggleButton.text = "팝업 알림 꺼짐"
-            popupToggleButton.background = ContextCompat.getDrawable(this, R.drawable.btn_dark_bg)
-            popupToggleButton.setTextColor(android.graphics.Color.parseColor("#FF6B6B"))
-        }
     }
 
     private fun isIgnoringBatteryOptimizations(): Boolean {

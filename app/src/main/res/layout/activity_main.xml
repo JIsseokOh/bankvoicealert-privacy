@@ -288,22 +288,6 @@
         android:elevation="6dp"
         android:letterSpacing="0.03"/>
 
-    <!-- 팝업 알림 토글 버튼 -->
-    <Button
-        android:id="@+id/popupToggleButton"
-        android:layout_width="match_parent"
-        android:layout_height="56dp"
-        android:text="팝업 알림 켜짐"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:background="@drawable/btn_dark_bg"
-        app:backgroundTint="@null"
-        android:textColor="#FFFFFF"
-        android:layout_marginTop="8dp"
-        android:stateListAnimator="@null"
-        android:elevation="6dp"
-        android:letterSpacing="0.03"/>
-
     <!-- 사용방법 + 문의 (가로 배치) -->
     <LinearLayout
         android:layout_width="match_parent"

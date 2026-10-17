@@ -42,7 +42,6 @@ class BankNotificationService : NotificationListenerService() {
     private lateinit var updateChecker: UpdateChecker
     private var isServiceActive = false
     private var cachedBackgroundEnabled = false
-    private var cachedPopupAlertEnabled = true
     private var settingsPrefs: SharedPreferences? = null
     private var prefListener: SharedPreferences.OnSharedPreferenceChangeListener? = null
 
@@ -78,11 +77,9 @@ class BankNotificationService : NotificationListenerService() {
 
         settingsPrefs = getSharedPreferences("settings", Context.MODE_PRIVATE)
         cachedBackgroundEnabled = settingsPrefs!!.getBoolean("background_enabled", false)
-        cachedPopupAlertEnabled = settingsPrefs!!.getBoolean("popup_alert_enabled", true)
         prefListener = SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
             when (key) {
                 "background_enabled" -> cachedBackgroundEnabled = prefs.getBoolean(key, false)
-                "popup_alert_enabled" -> cachedPopupAlertEnabled = prefs.getBoolean(key, true)
             }
         }
         settingsPrefs!!.registerOnSharedPreferenceChangeListener(prefListener)
@@ -180,10 +177,8 @@ class BankNotificationService : NotificationListenerService() {
                     // 업데이트 필요 여부 확인
                     val updateMessage = getUpdateTTSMessage()
 
-                    // 화면 푸쉬 알림 표시 (설정이 켜져 있을 때만)
-                    if (isPopupAlertEnabled()) {
-                        showDepositNotification(amount)
-                    }
+                    // 입금 팝업 표시 (항상 띄운다)
+                    showDepositNotification(amount)
 
                     // 음성 알림 (업데이트 필요 시 메시지 추가)
                     ttsManager.speakSimple("띵동", amount, updateMessage)
@@ -365,10 +360,6 @@ class BankNotificationService : NotificationListenerService() {
             "com.bbm"                   // BBM
         )
         return blockedApps.contains(packageName)
-    }
-
-    private fun isPopupAlertEnabled(): Boolean {
-        return cachedPopupAlertEnabled
     }
 
     private fun isBackgroundEnabled(): Boolean {
