@@ -33,6 +33,14 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         private const val GOOGLE_TTS_PACKAGE = "com.google.android.tts"
         private const val SYNTH_FILE_PREFIX = "tts_"
 
+        /** 사용자가 고른 목소리(엔진의 Voice 이름)를 저장하는 설정 키 */
+        const val PREF_VOICE_NAME = "voice_name"
+        /** 화면에 보여주는 목소리 버튼의 최대 개수 (목소리1 ~ 목소리5) */
+        const val MAX_VOICE_OPTIONS = 5
+        /** 목소리 버튼을 눌렀을 때 들려주는 샘플 (테스트 재생과 같은 문장) */
+        private const val PREVIEW_MESSAGE = "띵동"
+        private const val PREVIEW_AMOUNT = "10000"
+
         @Volatile
         private var INSTANCE: TTSManager? = null
 
@@ -50,6 +58,12 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private val speechQueue = ConcurrentLinkedQueue<SpeechItem>()
     private val pendingQueue = ConcurrentLinkedQueue<SpeechItem>()
     private val mainHandler = Handler(Looper.getMainLooper())
+    private val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
+
+    // 현재 엔진에서 고를 수 있는 한국어 목소리 (초기화 후 채워짐, 최대 MAX_VOICE_OPTIONS개, 0번이 기본 목소리)
+    @Volatile private var voiceOptions: List<Voice> = emptyList()
+    // 엔진에 마지막으로 적용한 목소리 이름 (같은 목소리를 다시 setVoice 하지 않기 위함)
+    @Volatile private var appliedVoiceName: String? = null
 
     // 파일로 합성 중인 항목 (utteranceId -> 항목). 합성이 끝나면 우리 프로세스에서 직접 재생한다.
     private val synthesizing = ConcurrentHashMap<String, SpeechItem>()
@@ -82,6 +96,18 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             }
         }
 
+    /**
+     * 고를 수 있는 목소리 목록이 바뀌었을 때(엔진 초기화·전환 완료, 한국어 사용 불가 확정) 메인 스레드에서 호출된다.
+     * 등록 시점에 이미 초기화가 끝나 있으면 즉시 한 번 통지한다.
+     */
+    var onVoicesChanged: (() -> Unit)? = null
+        set(value) {
+            field = value
+            if (value != null && isInitialized) {
+                mainHandler.post { value.invoke() }
+            }
+        }
+
     private val speakingWatchdog = Runnable {
         if (isSpeaking && speakingStartTime > 0) {
             val elapsed = System.currentTimeMillis() - speakingStartTime
@@ -99,8 +125,15 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         val message: String,
         val speechRate: Float,
         val volumePercent: Int,
+        val voiceName: String? = null,
+        val isPreview: Boolean = false,
         val utteranceId: String = UUID.randomUUID().toString()
     )
+
+    /** 화면에서 고를 수 있는 목소리 하나. index 는 0부터, label 은 "목소리1"처럼 사람이 보는 이름 */
+    data class VoiceOption(val index: Int, val name: String) {
+        val label: String get() = "목소리${index + 1}"
+    }
 
     init {
         cleanupSynthFiles()
@@ -127,6 +160,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             // 폴백할 구글 엔진이 없거나, 구글로도 실패 → 한국어 사용 불가 확정 후 1회 통지
             koreanNeedsData = (result == TextToSpeech.LANG_MISSING_DATA)
             koreanUnavailable = true
+            voiceOptions = emptyList()
+            notifyVoicesChanged()
             notifyKoreanUnavailable()
             return
         }
@@ -134,8 +169,11 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         initRetryCount = 0
         isInitialized = true
         koreanUnavailable = false
-        setOptimalVoice()
+        appliedVoiceName = null
+        refreshVoiceOptions()
+        applyVoice(selectedVoiceName())
         Log.d(TAG, "TTS initialized successfully on ${currentEngineName()}")
+        notifyVoicesChanged()
         processPendingQueue()
     }
 
@@ -185,23 +223,112 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         mainHandler.post { callback.invoke(needsData) }
     }
 
-    private fun setOptimalVoice() {
-        val voices = tts?.voices ?: return
-        val koreanVoices = voices.filter { it.locale.language == "ko" }
+    // ===== 목소리 선택 =====
 
-        val selectedVoice: Voice? =
-            koreanVoices.find { it.name.contains("Google", ignoreCase = true) }
-                ?: koreanVoices.find {
-                    it.name.contains("female", ignoreCase = true) ||
+    /**
+     * 현재 엔진이 가진 한국어 목소리 중 실제로 쓸 수 있는 것만 골라 번호를 매긴다.
+     * - 아직 내려받지 않은 목소리(notInstalled)는 뺀다.
+     * - 구글 TTS가 "ko-KR-language"처럼 내놓는 '언어 기본' 항목은 실제 목소리가 아니라 기본 목소리와 소리가 같으므로 뺀다.
+     * - 인터넷이 필요한 목소리는 뺀다(입금 알림은 오프라인에서도 울려야 함). 단, 기기 안 목소리가 하나도 없으면 그대로 보여준다.
+     * - 이름순으로 정렬해 실행할 때마다 번호가 바뀌지 않게 하고, 앱이 원래 기본으로 쓰던 목소리를 1번에 둔다.
+     * - 최대 MAX_VOICE_OPTIONS개까지만 보여준다. 엔진(삼성·구글)과 설치된 음성 데이터에 따라 개수가 다르다.
+     */
+    private fun refreshVoiceOptions() {
+        val allVoices: Set<Voice> = try {
+            tts?.voices ?: emptySet()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to query voices", e)
+            emptySet()
+        }
+        val korean = allVoices.filter { voice ->
+            try {
+                voice.locale?.language == "ko" &&
+                    voice.features?.contains(TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED) != true
+            } catch (e: Exception) {
+                false
+            }
+        }
+        val realVoices = korean.filter { !it.name.endsWith("-language", ignoreCase = true) }
+        val candidates = if (realVoices.isNotEmpty()) realVoices else korean
+        val onDevice = candidates.filter { !it.isNetworkConnectionRequired }
+        val usable = (if (onDevice.isNotEmpty()) onDevice else candidates).sortedBy { it.name }
+        val defaultVoice = pickDefaultVoice(usable)
+        val ordered = if (defaultVoice != null) {
+            listOf(defaultVoice) + usable.filter { it.name != defaultVoice.name }
+        } else {
+            usable
+        }
+        voiceOptions = ordered.take(MAX_VOICE_OPTIONS)
+        Log.d(TAG, "Korean voices on ${currentEngineName()}: " +
+            korean.map { "${it.name}(network=${it.isNetworkConnectionRequired})" } +
+            " -> options=${voiceOptions.map { it.name }}")
+    }
+
+    /** 예전 버전부터 쓰던 기본 목소리 규칙: 이름에 Google → 여성 표시 → 첫 번째 */
+    private fun pickDefaultVoice(voices: List<Voice>): Voice? =
+        voices.find { it.name.contains("Google", ignoreCase = true) }
+            ?: voices.find {
+                it.name.contains("female", ignoreCase = true) ||
                     it.name.contains("여", ignoreCase = true)
-                }
-                ?: koreanVoices.firstOrNull()
+            }
+            ?: voices.firstOrNull()
 
-        selectedVoice?.let {
-            tts?.voice = it
-            Log.d(TAG, "Selected voice: ${it.name}")
+    private fun selectedVoiceName(): String? = prefs.getString(PREF_VOICE_NAME, null)
+
+    /**
+     * voiceName 목소리를 엔진에 적용한다. 이름이 없거나 이 엔진에 없는 이름이면 1번(기본) 목소리를 쓴다.
+     * 재생 직전마다 호출되므로, 화면에서 바꾼 선택이 다음 알림부터 바로 반영된다.
+     */
+    private fun applyVoice(voiceName: String?) {
+        val options = voiceOptions
+        if (options.isEmpty()) return
+        val target = options.firstOrNull { it.name == voiceName } ?: options.first()
+        if (appliedVoiceName == target.name) return
+        val currentTts = tts ?: return
+        try {
+            val result = currentTts.setVoice(target)
+            if (result == TextToSpeech.SUCCESS) {
+                appliedVoiceName = target.name
+                Log.d(TAG, "Selected voice: ${target.name}")
+            } else {
+                Log.w(TAG, "setVoice(${target.name}) failed: $result")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "setVoice(${target.name}) threw", e)
         }
     }
+
+    private fun notifyVoicesChanged() {
+        val callback = onVoicesChanged ?: return
+        mainHandler.post { callback.invoke() }
+    }
+
+    /** 현재 엔진에서 고를 수 있는 한국어 목소리 목록 (초기화 전이거나 한국어 목소리가 없으면 빈 목록) */
+    fun getVoiceOptions(): List<VoiceOption> =
+        voiceOptions.mapIndexed { index, voice -> VoiceOption(index, voice.name) }
+
+    /** 저장된 목소리의 번호(0부터). 저장값이 없거나 이 엔진에 없는 이름이면 0(기본 목소리) */
+    fun getSelectedVoiceIndex(): Int {
+        val saved = selectedVoiceName() ?: return 0
+        return voiceOptions.indexOfFirst { it.name == saved }.coerceAtLeast(0)
+    }
+
+    /**
+     * index 번 목소리를 선택해 저장하고, 그 목소리로 샘플("띵동. 1만원 확인")을 바로 들려준다.
+     * 아직 재생을 시작하지 않은 이전 샘플은 버려서, 버튼을 연달아 눌러도 마지막 선택만 들리게 한다.
+     */
+    fun selectVoice(index: Int) {
+        val voice = voiceOptions.getOrNull(index) ?: return
+        prefs.edit().putString(PREF_VOICE_NAME, voice.name).apply()
+        speechQueue.removeIf { it.isPreview }
+        pendingQueue.removeIf { it.isPreview }
+        val message = "$PREVIEW_MESSAGE. ${formatAmount(PREVIEW_AMOUNT)} 확인"
+        enqueue(SpeechItem(message, currentSpeechRate(), currentVolumePercent(), voiceName = voice.name, isPreview = true))
+    }
+
+    private fun currentSpeechRate(): Float = prefs.getFloat("speech_rate", 1.0f)
+
+    private fun currentVolumePercent(): Int = prefs.getInt("volume_percent", 100)
 
     private fun setupTTSListener() {
         tts?.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
@@ -238,12 +365,10 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     fun speakSimple(message: String, amount: String, suffix: String? = null) {
         val baseMessage = "$message. ${formatAmount(amount)} 확인"
         val fullMessage = if (suffix != null) "$baseMessage. $suffix" else baseMessage
-        val prefs = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
-        val volumePercent = prefs.getInt("volume_percent", 100)
-        val speechRate = prefs.getFloat("speech_rate", 1.0f)
+        enqueue(SpeechItem(fullMessage, currentSpeechRate(), currentVolumePercent(), voiceName = selectedVoiceName()))
+    }
 
-        val item = SpeechItem(fullMessage, speechRate, volumePercent)
-
+    private fun enqueue(item: SpeechItem) {
         if (!isInitialized) {
             pendingQueue.offer(item)
             ensureReady()
@@ -307,6 +432,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         val randomPitch = 0.8f + (Random.nextFloat() * 0.2f)
         currentTts.setSpeechRate(item.speechRate)
         currentTts.setPitch(randomPitch)
+        applyVoice(item.voiceName)
 
         val file = synthFileFor(item)
         file.delete()
@@ -600,6 +726,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         tts = null
         isInitialized = false
         isSpeaking = false
+        voiceOptions = emptyList()
+        appliedVoiceName = null
         synchronized(Companion) {
             INSTANCE = null
         }

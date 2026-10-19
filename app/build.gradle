@@ -31,8 +31,8 @@ android {
         // Play automatic integrity protection requires minSdk 24 or higher
         minSdk 24
         targetSdk 36
-        versionCode 121
-        versionName "1.3.90"
+        versionCode 122
+        versionName "1.3.91"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 

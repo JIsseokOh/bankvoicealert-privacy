@@ -81,6 +81,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batteryOptimizationButton: Button
     private lateinit var salesSummaryButton: Button
     private lateinit var inviteButton: Button
+    private lateinit var voiceCard: View
+    private lateinit var voiceButtons: List<Button>
     private lateinit var adContainer: LinearLayout
     private lateinit var depositDataManager: DepositDataManager
 
@@ -123,6 +125,8 @@ class MainActivity : AppCompatActivity() {
         depositDataManager = DepositDataManager.getInstance(this)
 
         initViews()
+        // 엔진 초기화가 끝나 목소리 목록이 정해지면(또는 바뀌면) 목소리 버튼을 다시 그린다
+        ttsManager.onVoicesChanged = { renderVoiceButtons() }
         loadSettings()
         checkPermissions()
         setupListeners()
@@ -180,6 +184,10 @@ class MainActivity : AppCompatActivity() {
         batteryOptimizationButton = findViewById(R.id.batteryOptimizationButton)
         salesSummaryButton = findViewById(R.id.salesSummaryButton)
         inviteButton = findViewById(R.id.inviteButton)
+        voiceCard = findViewById(R.id.voiceCard)
+        voiceButtons = listOf(
+            R.id.voiceButton1, R.id.voiceButton2, R.id.voiceButton3, R.id.voiceButton4, R.id.voiceButton5
+        ).map { findViewById<Button>(it) }
     }
     
     private fun loadSettings() {
@@ -208,7 +216,8 @@ class MainActivity : AppCompatActivity() {
             prefs.edit().remove("popup_alert_enabled").apply()
         }
 
-        // Pre-generated assets are loaded automatically in TTSManager init
+        // 목소리 버튼 (엔진 초기화 전이면 숨겨져 있다가 onVoicesChanged 로 채워진다)
+        renderVoiceButtons()
     }
     
     private fun setupListeners() {
@@ -251,6 +260,14 @@ class MainActivity : AppCompatActivity() {
         
         testButton.setOnClickListener {
             testVoiceAlert()
+        }
+
+        // 목소리 버튼: 누르면 그 목소리를 저장하고 샘플을 바로 들려준다
+        voiceButtons.forEachIndexed { index, button ->
+            button.setOnClickListener {
+                ttsManager.selectVoice(index)
+                renderVoiceButtons()
+            }
         }
 
         salesSummaryButton.setOnClickListener {
@@ -800,6 +817,35 @@ class MainActivity : AppCompatActivity() {
         backgroundToggleButton.background = ContextCompat.getDrawable(this, background)
     }
 
+    /**
+     * 기기(엔진)에서 쓸 수 있는 한국어 목소리 수(최대 5)만큼 버튼을 보이고 선택된 목소리를 강조한다.
+     * 목소리가 하나도 없으면(초기화 전, 한국어 미지원) 카드 전체를 숨긴다.
+     */
+    private fun renderVoiceButtons() {
+        val options = ttsManager.getVoiceOptions()
+        if (options.isEmpty()) {
+            voiceCard.visibility = View.GONE
+            return
+        }
+        val selectedIndex = ttsManager.getSelectedVoiceIndex()
+        voiceCard.visibility = View.VISIBLE
+        voiceButtons.forEachIndexed { index, button ->
+            val option = options.getOrNull(index)
+            if (option == null) {
+                button.visibility = View.GONE
+                return@forEachIndexed
+            }
+            val selected = index == selectedIndex
+            button.visibility = View.VISIBLE
+            button.text = option.label
+            button.backgroundTintList = null
+            button.background = ContextCompat.getDrawable(
+                this, if (selected) R.drawable.btn_primary_bg else R.drawable.btn_dark_bg
+            )
+            button.setTextColor(android.graphics.Color.parseColor(if (selected) "#000000" else "#FFFFFF"))
+        }
+    }
+
     private fun isIgnoringBatteryOptimizations(): Boolean {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
@@ -922,6 +968,7 @@ class MainActivity : AppCompatActivity() {
         adManager.destroyNativeAd()
         // Activity 누수 방지를 위해 콜백만 해제 (싱글톤이므로 shutdown은 호출하지 않음)
         ttsManager.onKoreanUnavailable = null
+        ttsManager.onVoicesChanged = null
     }
 
 

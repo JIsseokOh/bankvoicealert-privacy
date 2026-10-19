@@ -22,6 +22,7 @@ The app leverages a dual TTS engine architecture: high-quality pre-generated clo
 - Automatic detection of deposit push notifications from banking apps
 - Real-time TTS announcement of deposited amounts
 - Adjustable volume (0–100%) and speech rate (0.5x–2.0x)
+- Selectable announcer voice: up to five Korean voices offered by the device's TTS engine (Samsung or Google), with instant preview
 - Natural pronunciation mapping for English-abbreviated bank names (e.g., KB, NH, IBK)
 
 ### Revenue Tracking
@@ -37,7 +38,6 @@ The app leverages a dual TTS engine architecture: high-quality pre-generated clo
 
 ### Popup Notifications
 - On-screen deposit confirmation overlay
-- Configurable popup display toggle
 
 ---
 
