@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 다른 앱 위에 띄우는 입금 카드 창의 루트. 창 자체가 화면 너비이므로 여백은 창 안쪽(padding)에 둔다 -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/overlayRoot"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="16dp"
+    android:paddingBottom="16dp"
+    android:clipToPadding="false"
+    android:clickable="true"
+    android:focusable="true">
+
+    <include
+        layout="@layout/view_deposit_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+</FrameLayout>

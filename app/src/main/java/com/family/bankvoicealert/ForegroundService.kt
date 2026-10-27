@@ -30,6 +30,11 @@ class ForegroundService : Service() {
         private const val SERVICE_DURATION_HOURS = 24L
         private const val SERVICE_CHECK_INTERVAL_MINUTES = 15L
 
+        /** 이 프로세스 안에서 서비스가 포그라운드로 실행 중인지 (Android 17 백그라운드 오디오 규칙 판단용) */
+        @Volatile
+        var isRunning: Boolean = false
+            private set
+
         fun startService(context: Context) {
             try {
                 val intent = Intent(context, ForegroundService::class.java).apply {
@@ -144,6 +149,7 @@ class ForegroundService : Service() {
                 }
 
                 isServiceStarted = true
+                isRunning = true
                 serviceStartTime = System.currentTimeMillis()
 
                 // Wake lock 제거: NotificationListenerService는 시스템이 관리하며,
@@ -175,6 +181,7 @@ class ForegroundService : Service() {
                         Log.d(TAG, "Service starting...")
                         startForeground(NOTIFICATION_ID, createNotification())
                         isServiceStarted = true
+                        isRunning = true
                     } else {
                         Log.d(TAG, "Service already started")
                     }
@@ -191,6 +198,7 @@ class ForegroundService : Service() {
             if (!isServiceStarted) {
                 startForeground(NOTIFICATION_ID, createNotification())
                 isServiceStarted = true
+                isRunning = true
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error in onStartCommand", e)
@@ -299,6 +307,7 @@ class ForegroundService : Service() {
         Log.d(TAG, "Stopping service gracefully")
         try {
             isServiceStarted = false
+            isRunning = false
             cancelAllHandlers()
 
             try {
@@ -347,6 +356,7 @@ class ForegroundService : Service() {
 
         try {
             isServiceStarted = false
+            isRunning = false
             cancelAllHandlers()
             cancelServiceProtection()
             mainHandler.removeCallbacksAndMessages(null)

@@ -27,6 +27,11 @@ class DepositAlertActivity : AppCompatActivity() {
         const val EXTRA_AMOUNT = "extra_amount"
         private const val TAG = "DepositAlertActivity"
         private const val DISMISS_DELAY_MS = 90_000L  // 90 seconds
+
+        /** 팝업 화면이 지금 보이는 중인지 (보이는 중이면 새 입금은 이 화면에 갱신한다) */
+        @Volatile
+        var isShowing: Boolean = false
+            private set
     }
 
     private lateinit var adManager: AdManager
@@ -64,6 +69,8 @@ class DepositAlertActivity : AppCompatActivity() {
         )
 
         setContentView(R.layout.activity_deposit_alert)
+        // 다른 앱 위 입금 카드가 떠 있었다면 팝업 화면과 겹치지 않게 지운다
+        DepositOverlay.getInstance(this).dismiss()
         adManager = AdManager(this)
 
         val amount = intent.getStringExtra(EXTRA_AMOUNT) ?: ""
@@ -114,6 +121,16 @@ class DepositAlertActivity : AppCompatActivity() {
         dismissHandler.postDelayed(dismissRunnable, DISMISS_DELAY_MS)
 
         loadAdIfAttended()
+    }
+
+    override fun onStart() {
+        super.onStart()
+        isShowing = true
+    }
+
+    override fun onStop() {
+        super.onStop()
+        isShowing = false
     }
 
     override fun onResume() {

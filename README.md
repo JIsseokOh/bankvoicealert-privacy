@@ -37,7 +37,14 @@ The app leverages a dual TTS engine architecture: high-quality pre-generated clo
 - Battery optimization bypass support
 
 ### Popup Notifications
-- On-screen deposit confirmation overlay
+- On-screen deposit confirmation popup that turns the screen on and shows above the lock screen
+- The popup follows the orientation of the app underneath (no forced portrait), so a full-screen landscape video is not rotated away
+- While the user is watching a video, listening to music, or on a call with the screen unlocked, the deposit is shown as a compact card drawn over the current app instead: the app underneath keeps running and receiving touches, and the card disappears on tap or after 20 seconds
+
+### Resilient Voice Engine Connection
+- Detects when the device's TTS engine app (Google Speech Services or Samsung TTS) has been updated or force-stopped, which silently kills the engine binding
+- Re-creates the engine connection automatically and replays the pending announcement, instead of staying silent until the phone is rebooted
+- The in-app diagnostics report a lost engine connection and trigger reconnection
 
 ---
 

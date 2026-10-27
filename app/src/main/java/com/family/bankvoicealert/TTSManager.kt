@@ -1,7 +1,10 @@
 package com.family.bankvoicealert
 
 import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -16,6 +19,7 @@ import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.speech.tts.Voice
 import android.util.Log
+import androidx.core.content.ContextCompat
 import java.io.File
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
@@ -31,7 +35,14 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         private const val MAX_INIT_RETRIES = 3
         private const val INIT_RETRY_DELAY_MS = 2_000L
         private const val GOOGLE_TTS_PACKAGE = "com.google.android.tts"
+        private const val SAMSUNG_TTS_PACKAGE = "com.samsung.SMT"
         private const val SYNTH_FILE_PREFIX = "tts_"
+        // 엔진 연결이 끊긴 것을 발견해 다시 연결한 뒤, 같은 항목을 다시 읽어 보는 최대 횟수 (무한 반복 방지)
+        private const val MAX_RECOVERY_ATTEMPTS = 1
+        // 초기화를 시작한 뒤 이 시간 안에는 ensureReady 가 엔진을 또 만들지 않는다
+        private const val INIT_PENDING_TIMEOUT_MS = 15_000L
+        // 엔진 앱이 업데이트된 뒤 새 엔진이 자리 잡을 시간을 조금 준 다음 다시 연결한다
+        private const val ENGINE_UPDATE_REINIT_DELAY_MS = 3_000L
 
         /** 사용자가 고른 목소리(엔진의 Voice 이름)를 저장하는 설정 키 */
         const val PREF_VOICE_NAME = "voice_name"
@@ -75,6 +86,12 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     @Volatile private var isInitialized = false
     @Volatile private var isSpeaking = false
     @Volatile private var speakingStartTime = 0L
+    // 지금 읽는 중인 항목 (엔진이 멈추거나 연결이 끊겼을 때 같은 항목을 다시 시도하기 위해 기억한다)
+    @Volatile private var currentItem: SpeechItem? = null
+    // 엔진 객체를 마지막으로 만든 시각 (0이면 진행 중인 초기화가 없음)
+    @Volatile private var initStartedAt = 0L
+    private var initRetryRunnable: Runnable? = null
+    private var engineUpdateReceiver: BroadcastReceiver? = null
     private var initRetryCount = 0
     @Volatile private var triedGoogleFallback = false
     @Volatile private var koreanUnavailable = false
@@ -111,12 +128,18 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private val speakingWatchdog = Runnable {
         if (isSpeaking && speakingStartTime > 0) {
             val elapsed = System.currentTimeMillis() - speakingStartTime
-            if (elapsed > WATCHDOG_TIMEOUT_MS) {
+            if (elapsed >= WATCHDOG_TIMEOUT_MS) {
                 Log.w(TAG, "Watchdog: stuck for ${elapsed}ms, resetting")
-                synthesizing.clear()
-                stopPlayback()
-                resetSpeakingState()
-                processNextInQueue()
+                val stuck = currentItem
+                if (stuck != null && stuck.recoveryAttempts < MAX_RECOVERY_ATTEMPTS) {
+                    // 엔진이 응답하지 않는다(업데이트·강제 종료 뒤 남은 죽은 연결 등): 엔진을 새로 만들고 한 번 더 읽는다
+                    recoverEngine(stuck, "watchdog timeout after ${elapsed}ms")
+                } else {
+                    synthesizing.clear()
+                    stopPlayback()
+                    resetSpeakingState()
+                    processNextInQueue()
+                }
             }
         }
     }
@@ -127,7 +150,9 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         val volumePercent: Int,
         val voiceName: String? = null,
         val isPreview: Boolean = false,
-        val utteranceId: String = UUID.randomUUID().toString()
+        val utteranceId: String = UUID.randomUUID().toString(),
+        /** 엔진 연결을 다시 만든 뒤 이 항목을 다시 시도한 횟수 */
+        val recoveryAttempts: Int = 0
     )
 
     /** 화면에서 고를 수 있는 목소리 하나. index 는 0부터, label 은 "목소리1"처럼 사람이 보는 이름 */
@@ -137,7 +162,14 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
     init {
         cleanupSynthFiles()
-        tts = TextToSpeech(context, this)
+        createEngine()
+        registerEngineUpdateReceiver()
+    }
+
+    /** 엔진 객체를 새로 만든다 (engine 이 null 이면 기기 기본 엔진). 초기화 결과는 onInit 으로 온다 */
+    private fun createEngine(engine: String? = null) {
+        initStartedAt = System.currentTimeMillis()
+        tts = if (engine != null) TextToSpeech(context, this, engine) else TextToSpeech(context, this)
         setupTTSListener()
     }
 
@@ -160,6 +192,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             // 폴백할 구글 엔진이 없거나, 구글로도 실패 → 한국어 사용 불가 확정 후 1회 통지
             koreanNeedsData = (result == TextToSpeech.LANG_MISSING_DATA)
             koreanUnavailable = true
+            initStartedAt = 0L
             voiceOptions = emptyList()
             notifyVoicesChanged()
             notifyKoreanUnavailable()
@@ -167,6 +200,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         }
 
         initRetryCount = 0
+        initStartedAt = 0L
         isInitialized = true
         koreanUnavailable = false
         appliedVoiceName = null
@@ -180,13 +214,21 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     private fun retryInit() {
         if (initRetryCount < MAX_INIT_RETRIES) {
             initRetryCount++
-            mainHandler.postDelayed({
-                tts?.shutdown()
-                tts = TextToSpeech(context, this)
-                setupTTSListener()
-            }, INIT_RETRY_DELAY_MS)
+            val retry = Runnable {
+                initRetryRunnable = null
+                try {
+                    tts?.shutdown()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error shutting down failed TTS", e)
+                }
+                createEngine()
+            }
+            initRetryRunnable = retry
+            mainHandler.postDelayed(retry, INIT_RETRY_DELAY_MS)
         } else {
             Log.e(TAG, "TTS init failed after $MAX_INIT_RETRIES attempts")
+            // 다음 ensureReady(앱 실행·입금) 때 처음부터 다시 시도할 수 있게 한다
+            initStartedAt = 0L
         }
     }
 
@@ -210,8 +252,7 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             } catch (e: Exception) {
                 Log.e(TAG, "Error shutting down before engine switch", e)
             }
-            tts = TextToSpeech(context, this, GOOGLE_TTS_PACKAGE)
-            setupTTSListener()
+            createEngine(GOOGLE_TTS_PACKAGE)
         }
     }
 
@@ -356,8 +397,18 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
                     mainHandler.post { speakDirectly(item) }
                     return
                 }
-                resetSpeakingState()
-                processNextInQueue()
+                mainHandler.post {
+                    val failed = currentItem
+                    if (failed != null && failed.utteranceId == utteranceId &&
+                        failed.recoveryAttempts < MAX_RECOVERY_ATTEMPTS && !isEngineConnected()
+                    ) {
+                        // 엔진이 직접 말하는 길까지 실패했고 연결도 끊겨 있다: 다시 연결해 한 번 더 읽는다
+                        recoverEngine(failed, "utterance error while disconnected")
+                    } else {
+                        resetSpeakingState()
+                        processNextInQueue()
+                    }
+                }
             }
         })
     }
@@ -378,21 +429,24 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         if (!isSpeaking) processNextInQueue()
     }
 
+    /**
+     * 엔진이 쓸 수 있는 상태인지 확인하고, 아니면 다시 연결한다.
+     * - 초기화가 안 됐거나 실패했으면 새로 초기화한다 (이미 초기화가 진행 중이면 기다린다).
+     * - 초기화는 됐지만 연결이 끊겨 있으면(엔진 앱 업데이트·강제 종료 뒤) 엔진을 새로 만든다.
+     *   예전에는 이 상태를 알아채지 못해, 알림은 와도 휴대폰을 다시 켤 때까지 소리가 나지 않았다.
+     */
     fun ensureReady() {
-        if (isInitialized) return
         mainHandler.post {
-            if (isInitialized) return@post
-            Log.d(TAG, "ensureReady: forcing TTS reinit")
-            initRetryCount = 0
-            triedGoogleFallback = false
-            koreanUnavailable = false
-            try {
-                tts?.shutdown()
-            } catch (e: Exception) {
-                Log.e(TAG, "Error shutting down stale TTS", e)
+            if (!isInitialized) {
+                val pendingFor = System.currentTimeMillis() - initStartedAt
+                if (initStartedAt > 0 && pendingFor < INIT_PENDING_TIMEOUT_MS) {
+                    Log.d(TAG, "ensureReady: init already in progress (${pendingFor}ms)")
+                    return@post
+                }
+                reinitEngine("not initialized")
+            } else if (!isEngineConnected()) {
+                reinitEngine("engine connection lost")
             }
-            tts = TextToSpeech(context, this)
-            setupTTSListener()
         }
     }
 
@@ -405,10 +459,11 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
     }
 
     private fun processNextInQueue() {
-        if (speechQueue.isEmpty() || isSpeaking) return
+        if (!isInitialized || speechQueue.isEmpty() || isSpeaking) return
 
         val item = speechQueue.poll() ?: return
         isSpeaking = true
+        currentItem = item
         speakingStartTime = System.currentTimeMillis()
         mainHandler.postDelayed(speakingWatchdog, WATCHDOG_TIMEOUT_MS)
         speakNow(item)
@@ -426,6 +481,13 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
             Log.e(TAG, "TTS engine is null, skipping")
             resetSpeakingState()
             processNextInQueue()
+            return
+        }
+
+        // 엔진 앱(구글·삼성 TTS)이 업데이트되거나 강제 종료되면 연결이 끊긴 채 남고, 그 뒤의 synthesizeToFile/speak 는
+        // 소리 없이 ERROR 만 돌려준다. 읽기 전에 연결을 확인하고, 끊겨 있으면 엔진을 새로 만든 뒤 이 항목부터 이어서 읽는다.
+        if (!isEngineConnected(currentTts)) {
+            recoverEngine(item, "engine disconnected before synthesis")
             return
         }
 
@@ -550,6 +612,10 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         val result = currentTts.speak(item.message, TextToSpeech.QUEUE_FLUSH, params, item.utteranceId)
         if (result == TextToSpeech.ERROR) {
             Log.e(TAG, "TTS speak ERROR: ${item.message}")
+            if (item.recoveryAttempts < MAX_RECOVERY_ATTEMPTS && !isEngineConnected(currentTts)) {
+                recoverEngine(item, "speak returned ERROR while disconnected")
+                return
+            }
             resetSpeakingState()
             processNextInQueue()
             return
@@ -592,7 +658,122 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         restoreVolume()
         releaseAudioFocus()
         isSpeaking = false
+        currentItem = null
         speakingStartTime = 0
+    }
+
+    // ===== 엔진 연결 복구 =====
+
+    /**
+     * 엔진 프로세스와의 연결이 살아 있는지 확인한다.
+     * 엔진 앱이 업데이트되거나 강제 종료되면 프레임워크의 TextToSpeech 는 연결을 다시 맺지 않고(onBindingDied 를
+     * 처리하지 않음), 이후 모든 호출이 오류값만 돌려준다. isLanguageAvailable 은 연결이 끊겼을 때
+     * LANG_NOT_SUPPORTED(-2)를 돌려주므로 가벼운 연결 확인용으로 쓴다 (초기화 때 한국어 지원은 이미 확인했다).
+     */
+    private fun isEngineConnected(currentTts: TextToSpeech? = tts): Boolean {
+        val engine = currentTts ?: return false
+        return try {
+            engine.isLanguageAvailable(Locale.KOREAN) >= 0
+        } catch (e: Exception) {
+            Log.e(TAG, "isLanguageAvailable threw", e)
+            false
+        }
+    }
+
+    /**
+     * 읽는 도중 엔진이 끊기거나 멈춘 것을 발견했을 때: 지금 항목을 (재시도 한도 안에서) 대기열 맨 앞에 되돌리고,
+     * 아직 안 읽은 항목도 대기열로 옮긴 뒤 엔진을 새로 만든다. 초기화가 끝나면 onInit 이 대기열을 이어서 읽는다.
+     */
+    private fun recoverEngine(item: SpeechItem, reason: String) {
+        mainHandler.post {
+            // 이미 다른 경로(감시 타이머·오류 콜백)가 같은 항목을 복구했으면 중복 처리하지 않는다
+            if (currentItem?.utteranceId != item.utteranceId) return@post
+            Log.w(TAG, "Recovering TTS engine ($reason)")
+            synthesizing.clear()
+            stopPlayback()
+            resetSpeakingState()
+            if (item.recoveryAttempts < MAX_RECOVERY_ATTEMPTS) {
+                synthFileFor(item).delete()
+                pendingQueue.offer(
+                    item.copy(
+                        recoveryAttempts = item.recoveryAttempts + 1,
+                        utteranceId = UUID.randomUUID().toString()
+                    )
+                )
+            } else {
+                Log.e(TAG, "Dropping item after ${item.recoveryAttempts} engine recoveries: ${item.message}")
+            }
+            while (true) {
+                val next = speechQueue.poll() ?: break
+                pendingQueue.offer(next)
+            }
+            reinitEngine(reason)
+        }
+    }
+
+    /** 기존 엔진 객체를 버리고 새로 만든다. 초기화 결과(onInit)가 오면 대기열을 이어서 읽는다 */
+    private fun reinitEngine(reason: String) {
+        Log.w(TAG, "Re-creating TTS engine connection: $reason")
+        initRetryRunnable?.let { mainHandler.removeCallbacks(it) }
+        initRetryRunnable = null
+        isInitialized = false
+        initRetryCount = 0
+        triedGoogleFallback = false
+        koreanUnavailable = false
+        appliedVoiceName = null
+        val stale = tts
+        tts = null
+        try {
+            stale?.shutdown()
+        } catch (e: Exception) {
+            Log.e(TAG, "Error shutting down stale TTS", e)
+        }
+        createEngine()
+    }
+
+    /**
+     * 엔진 앱(구글 음성 서비스·삼성 TTS)이 업데이트되면 기존 연결은 영구히 끊긴다. 업데이트를 감지하면 잠시 뒤
+     * 연결을 새로 만들어, 다음 입금 때 재연결 때문에 소리가 늦어지지 않게 한다.
+     */
+    private fun registerEngineUpdateReceiver() {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(ctx: Context?, intent: Intent?) {
+                if (intent?.action != Intent.ACTION_PACKAGE_REPLACED) return
+                val pkg = intent.data?.schemeSpecificPart ?: return
+                if (!isTtsEnginePackage(pkg)) return
+                Log.w(TAG, "TTS engine package replaced: $pkg")
+                mainHandler.postDelayed(
+                    { reinitEngine("engine package replaced: $pkg") },
+                    ENGINE_UPDATE_REINIT_DELAY_MS
+                )
+            }
+        }
+        val filter = IntentFilter(Intent.ACTION_PACKAGE_REPLACED).apply { addDataScheme("package") }
+        try {
+            ContextCompat.registerReceiver(context, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+            engineUpdateReceiver = receiver
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to register engine update receiver", e)
+        }
+    }
+
+    private fun unregisterEngineUpdateReceiver() {
+        val receiver = engineUpdateReceiver ?: return
+        engineUpdateReceiver = null
+        try {
+            context.unregisterReceiver(receiver)
+        } catch (e: Exception) {
+            // 이미 해제된 경우
+        }
+    }
+
+    private fun isTtsEnginePackage(pkg: String): Boolean {
+        if (pkg == GOOGLE_TTS_PACKAGE || pkg == SAMSUNG_TTS_PACKAGE) return true
+        return try {
+            tts?.engines?.any { it.name == pkg } == true
+        } catch (e: Exception) {
+            false
+        }
     }
 
     private fun formatAmount(amount: String): String {
@@ -718,6 +899,9 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
 
     fun shutdown() {
         mainHandler.removeCallbacks(speakingWatchdog)
+        initRetryRunnable?.let { mainHandler.removeCallbacks(it) }
+        initRetryRunnable = null
+        unregisterEngineUpdateReceiver()
         synthesizing.clear()
         stopPlayback()
         releaseAudioFocus()
@@ -726,6 +910,8 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         tts = null
         isInitialized = false
         isSpeaking = false
+        currentItem = null
+        initStartedAt = 0L
         voiceOptions = emptyList()
         appliedVoiceName = null
         synchronized(Companion) {
@@ -744,6 +930,15 @@ class TTSManager private constructor(context: Context) : TextToSpeech.OnInitList
         // 재시도를 모두 소진하고도 초기화가 안 된 경우만 실패로 본다(초기화 중 오탐 방지)
         if (!isInitialized && !koreanUnavailable && initRetryCount >= MAX_INIT_RETRIES) {
             issues.add("음성 기능이 준비되지 않았어요" to "휴대폰을 다시 켠 뒤에도 소리가 없으면 알려주세요.")
+        }
+
+        // 초기화는 됐지만 엔진 앱 업데이트 등으로 연결이 끊긴 상태: 바로 다시 연결을 시도하고 사용자에게도 알린다
+        if (isInitialized && !isEngineConnected()) {
+            issues.add(
+                "음성 기능 연결이 끊어졌어요" to
+                    "휴대폰의 음성 앱이 업데이트되면 생길 수 있어요. 지금 다시 연결하고 있으니 잠시 후 테스트 재생을 눌러 주세요."
+            )
+            ensureReady()
         }
 
         if (koreanUnavailable) {

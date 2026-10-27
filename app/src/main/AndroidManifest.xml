@@ -60,7 +60,11 @@
             </intent-filter>
         </activity>
 
-        <!-- Deposit alert overlay activity -->
+        <!-- Deposit alert overlay activity.
+             No fixed orientation: a portrait lock used to force a landscape app behind the
+             translucent popup (e.g. full-screen YouTube) back into portrait. The popup follows
+             whatever orientation the app underneath is using, and handles rotation itself so
+             the banner ad is not reloaded and the dismiss timer is not reset. -->
         <activity
             android:name=".DepositAlertActivity"
             android:exported="false"
@@ -68,7 +72,7 @@
             android:theme="@style/Theme.DepositAlert"
             android:excludeFromRecents="true"
             android:taskAffinity=""
-            android:screenOrientation="portrait"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
             android:showOnLockScreen="true"
             android:turnScreenOn="true" />
 

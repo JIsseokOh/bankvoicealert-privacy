@@ -1,5 +1,6 @@
 package com.family.bankvoicealert
 
+import android.app.KeyguardManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -8,9 +9,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
+import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
@@ -300,6 +304,13 @@ class BankNotificationService : NotificationListenerService() {
                 "${amount}원"
             }
 
+            // 영상·음악·통화 중에는 앞의 앱을 건드리지 않는 작은 카드로, 그 외에는 입금 팝업 화면으로 보여준다
+            if (shouldUseOverlayCard() && DepositOverlay.getInstance(this).show(formattedAmount)) {
+                Log.d(TAG, "입금 카드(다른 앱 위) 표시: $formattedAmount")
+                return
+            }
+            DepositOverlay.getInstance(this).dismiss()
+
             val intent = Intent(this, DepositAlertActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or
                         Intent.FLAG_ACTIVITY_CLEAR_TOP or
@@ -311,6 +322,33 @@ class BankNotificationService : NotificationListenerService() {
             Log.d(TAG, "입금 팝업 직접 실행: $formattedAmount")
         } catch (e: Exception) {
             Log.e(TAG, "Error showing deposit notification", e)
+        }
+    }
+
+    /**
+     * 입금 팝업 화면(DepositAlertActivity)을 띄우면 그 순간 앞에 있던 앱이 일시정지 상태가 되고 포커스를 잃는다
+     * (팝업이 세로 고정이던 때에는 가로로 보던 유튜브가 세로로 돌아가 버리기까지 했다).
+     * 사용자가 화면을 켜 둔 채 영상·음악을 틀어 놓았거나 통화 중이면, 뒤의 앱을 그대로 두는 카드(DepositOverlay)로 보여준다.
+     * 화면이 꺼져 있거나 잠겨 있으면 카드는 보이지 않으므로, 화면을 켜고 잠금 위에 뜨는 팝업 화면을 그대로 쓴다.
+     * 이미 팝업 화면이 떠 있으면 거기에 새 금액을 보여준다.
+     * Android 17 부터는 보이는 화면(액티비티)이나 포그라운드 서비스가 없는 앱의 소리가 음소거되므로,
+     * 2번(포그라운드 서비스)이 꺼져 있으면 소리를 보장해 주는 팝업 화면을 그대로 쓴다.
+     */
+    private fun shouldUseOverlayCard(): Boolean {
+        return try {
+            if (DepositAlertActivity.isShowing) return false
+            if (!ForegroundService.isRunning) return false
+            if (!Settings.canDrawOverlays(this)) return false
+            val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
+            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as KeyguardManager
+            if (!powerManager.isInteractive || keyguardManager.isKeyguardLocked) return false
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val inCall = audioManager.mode == AudioManager.MODE_IN_CALL ||
+                audioManager.mode == AudioManager.MODE_IN_COMMUNICATION
+            audioManager.isMusicActive || inCall
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deciding how to show the deposit", e)
+            false
         }
     }
 
